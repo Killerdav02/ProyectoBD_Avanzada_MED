@@ -1121,7 +1121,7 @@ VALUES
 
 INSERT INTO `e_commerce_db`.`producto_venta` (`id_producto_fk`, `id_venta_fk`, `cantidad`, `precio_unitario`, `id_moneda_fk`)
 VALUES
-(1, 1, 2, 10000.00, 1),   
+(1, 1, 2, 10000.00, 1),
 (2, 1, 3, 15000.00, 1);
 
 --- insert proveedor
@@ -1150,7 +1150,7 @@ VALUES
   ('Condición A', 'activo', 1, 1, 10),
   ('Condición B', 'activo', 1, 1, 11),
   ('Condición C', 'activo', 1, 1, 12),
-  
+
 
   ('Condición A', 'activo', 1, 2, 13),
   ('Condición B', 'activo', 1, 2, 14),
@@ -1164,8 +1164,8 @@ VALUES
   ('Condición A', 'activo', 1, 2, 22),
   ('Condición B', 'activo', 1, 2, 23),
   ('Condición C', 'activo', 1, 2, 24),
-  
- 
+
+
   ('Condición A', 'activo', 1, 3, 25),
   ('Condición B', 'activo', 1, 3, 26),
   ('Condición C', 'activo', 1, 3, 27),
@@ -1178,8 +1178,8 @@ VALUES
   ('Condición A', 'activo', 1, 3, 34),
   ('Condición B', 'activo', 1, 3, 35),
   ('Condición C', 'activo', 1, 3, 36),
-  
- 
+
+
   ('Condición A', 'activo', 1, 4, 37),
   ('Condición B', 'activo', 1, 4, 38),
   ('Condición C', 'activo', 1, 4, 39),
