@@ -896,6 +896,65 @@ VALUES (
         7.0
     );
 
+--- insert carrito
+
+
+INSERT INTO `e_commerce_db`.`carrito` (`id_carrito`, `id_producto_fk`, `id_cliente_fk`, `cantidad`) VALUES
+(2, 5, 2, 1),
+(2, 6, 2, 1),
+(2, 7, 2, 1),
+
+(3, 5, 3, 1),
+(3, 6, 3, 2),
+(3, 7, 3, 1),
+
+(4, 5, 4, 1),
+(4, 6, 4, 1),
+(4, 7, 4, 1),
+(4, 20, 4, 2),
+
+(5, 5, 5, 1),
+(5, 6, 5, 1),
+(5, 7, 5, 2),
+
+(6, 15, 6, 1),
+(6, 16, 6, 1),
+(6, 17, 6, 2),
+
+(7, 15, 7, 1),
+(7, 16, 7, 2),
+(7, 17, 7, 1),
+
+(8, 15, 8, 1),
+(8, 16, 8, 1),
+(8, 17, 8, 1),
+(8, 33, 8, 3),
+
+(9, 15, 9, 1),
+(9, 16, 9, 1),
+(9, 17, 9, 2),
+
+(10, 25, 10, 2),
+(10, 26, 10, 1),
+
+(11, 25, 11, 1),
+(11, 26, 11, 2),
+(11, 40, 11, 1),
+
+(12, 25, 12, 3),
+(12, 26, 12, 1),
+
+(13, 30, 13, 1),
+(13, 31, 13, 4),
+
+(14, 30, 14, 1),
+(14, 31, 14, 3),
+(14, 45, 14, 1),
+
+(15, 30, 15, 1),
+(15, 31, 15, 2);
+
+
 --- insercion de inventario
 
 INSERT INTO
@@ -1138,83 +1197,83 @@ VALUES
 INSERT INTO `e_commerce_db`.`proveedor_tienda_producto` (`condiciones`, `estado`, `id_tienda_fk`, `id_proveedor_fk`, `id_producto_fk`)
 VALUES
 
-  ('Condición A', 'activo', 1, 1, 1),
-  ('Condición B', 'activo', 1, 1, 2),
-  ('Condición C', 'activo', 1, 1, 3),
-  ('Condición A', 'activo', 1, 1, 4),
-  ('Condición B', 'activo', 1, 1, 5),
-  ('Condición C', 'activo', 1, 1, 6),
-  ('Condición A', 'activo', 1, 1, 7),
-  ('Condición B', 'activo', 1, 1, 8),
-  ('Condición C', 'activo', 1, 1, 9),
-  ('Condición A', 'activo', 1, 1, 10),
-  ('Condición B', 'activo', 1, 1, 11),
-  ('Condición C', 'activo', 1, 1, 12),
-  
-
-  ('Condición A', 'activo', 1, 2, 13),
-  ('Condición B', 'activo', 1, 2, 14),
-  ('Condición C', 'activo', 1, 2, 15),
-  ('Condición A', 'activo', 1, 2, 16),
-  ('Condición B', 'activo', 1, 2, 17),
-  ('Condición C', 'activo', 1, 2, 18),
-  ('Condición A', 'activo', 1, 2, 19),
-  ('Condición B', 'activo', 1, 2, 20),
-  ('Condición C', 'activo', 1, 2, 21),
-  ('Condición A', 'activo', 1, 2, 22),
-  ('Condición B', 'activo', 1, 2, 23),
-  ('Condición C', 'activo', 1, 2, 24),
-  
- 
-  ('Condición A', 'activo', 1, 3, 25),
-  ('Condición B', 'activo', 1, 3, 26),
-  ('Condición C', 'activo', 1, 3, 27),
-  ('Condición A', 'activo', 1, 3, 28),
-  ('Condición B', 'activo', 1, 3, 29),
-  ('Condición C', 'activo', 1, 3, 30),
-  ('Condición A', 'activo', 1, 3, 31),
-  ('Condición B', 'activo', 1, 3, 32),
-  ('Condición C', 'activo', 1, 3, 33),
-  ('Condición A', 'activo', 1, 3, 34),
-  ('Condición B', 'activo', 1, 3, 35),
-  ('Condición C', 'activo', 1, 3, 36),
-  
- 
-  ('Condición A', 'activo', 1, 4, 37),
-  ('Condición B', 'activo', 1, 4, 38),
-  ('Condición C', 'activo', 1, 4, 39),
-  ('Condición A', 'activo', 1, 4, 40),
-  ('Condición B', 'activo', 1, 4, 41),
-  ('Condición C', 'activo', 1, 4, 42),
-  ('Condición A', 'activo', 1, 4, 43),
-  ('Condición B', 'activo', 1, 4, 44),
-  ('Condición C', 'activo', 1, 4, 45),
-  ('Condición A', 'activo', 1, 4, 46),
-  ('Condición B', 'activo', 1, 4, 47),
-  ('Condición C', 'activo', 1, 4, 48);
+('Condición A', 'activo', 1, 1, 1),
+('Condición B', 'activo', 1, 1, 2),
+('Condición C', 'activo', 1, 1, 3),
+('Condición A', 'activo', 1, 1, 4),
+('Condición B', 'activo', 1, 1, 5),
+('Condición C', 'activo', 1, 1, 6),
+('Condición A', 'activo', 1, 1, 7),
+('Condición B', 'activo', 1, 1, 8),
+('Condición C', 'activo', 1, 1, 9),
+('Condición A', 'activo', 1, 1, 10),
+('Condición B', 'activo', 1, 1, 11),
+('Condición C', 'activo', 1, 1, 12),
 
 
----insert telefono
+('Condición A', 'activo', 1, 2, 13),
+('Condición B', 'activo', 1, 2, 14),
+('Condición C', 'activo', 1, 2, 15),
+('Condición A', 'activo', 1, 2, 16),
+('Condición B', 'activo', 1, 2, 17),
+('Condición C', 'activo', 1, 2, 18),
+('Condición A', 'activo', 1, 2, 19),
+('Condición B', 'activo', 1, 2, 20),
+('Condición C', 'activo', 1, 2, 21),
+('Condición A', 'activo', 1, 2, 22),
+('Condición B', 'activo', 1, 2, 23),
+('Condición C', 'activo', 1, 2, 24),
+
+
+('Condición A', 'activo', 1, 3, 25),
+('Condición B', 'activo', 1, 3, 26),
+('Condición C', 'activo', 1, 3, 27),
+('Condición A', 'activo', 1, 3, 28),
+('Condición B', 'activo', 1, 3, 29),
+('Condición C', 'activo', 1, 3, 30),
+('Condición A', 'activo', 1, 3, 31),
+('Condición B', 'activo', 1, 3, 32),
+('Condición C', 'activo', 1, 3, 33),
+('Condición A', 'activo', 1, 3, 34),
+('Condición B', 'activo', 1, 3, 35),
+('Condición C', 'activo', 1, 3, 36),
+
+
+('Condición A', 'activo', 1, 4, 37),
+('Condición B', 'activo', 1, 4, 38),
+('Condición C', 'activo', 1, 4, 39),
+('Condición A', 'activo', 1, 4, 40),
+('Condición B', 'activo', 1, 4, 41),
+('Condición C', 'activo', 1, 4, 42),
+('Condición A', 'activo', 1, 4, 43),
+('Condición B', 'activo', 1, 4, 44),
+('Condición C', 'activo', 1, 4, 45),
+('Condición A', 'activo', 1, 4, 46),
+('Condición B', 'activo', 1, 4, 47),
+('Condición C', 'activo', 1, 4, 48);
+
+
+--- insert telefono
 
 INSERT INTO `e_commerce_db`.`telefono` (`id_pais_fk`, `telefono`, `id_cliente_fk`)
 VALUES
-  (1, '3001234567', 1),
-  (1, '3001234568', 2),
-  (1, '3001234569', 3),
-  (1, '3001234570', 4),
-  (1, '3001234571', 5),
-  (1, '3001234572', 6),
-  (1, '3001234573', 7),
-  (1, '3001234574', 8),
-  (1, '3001234575', 9),
-  (1, '3001234576', 10),
-  (1, '3001234577', 11),
-  (1, '3001234578', 12),
-  (1, '3001234579', 13),
-  (1, '3001234580', 14),
-  (1, '3001234581', 15),
-  (1, '3001234582', 16),
-  (1, '3001234583', 17),
-  (1, '3001234584', 18),
-  (1, '3001234585', 19),
-  (1, '3001234586', 20);
+(1, '3001234567', 1),
+(1, '3001234568', 2),
+(1, '3001234569', 3),
+(1, '3001234570', 4),
+(1, '3001234571', 5),
+(1, '3001234572', 6),
+(1, '3001234573', 7),
+(1, '3001234574', 8),
+(1, '3001234575', 9),
+(1, '3001234576', 10),
+(1, '3001234577', 11),
+(1, '3001234578', 12),
+(1, '3001234579', 13),
+(1, '3001234580', 14),
+(1, '3001234581', 15),
+(1, '3001234582', 16),
+(1, '3001234583', 17),
+(1, '3001234584', 18),
+(1, '3001234585', 19),
+(1, '3001234586', 20);
