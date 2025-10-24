@@ -62,22 +62,23 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- Table `e_commerce_db`.`carrito`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`carrito` (
-  `id_carrito` INT NOT NULL AUTO_INCREMENT,
+  `id_carrito` INT NOT NULL,
   `id_producto_fk` INT NOT NULL,
   `id_cliente_fk` INT NOT NULL,
   `cantidad` INT NULL DEFAULT NULL,
-  PRIMARY KEY (`id_carrito`),
-  INDEX `fk_carrito_producto1_idx` (`id_producto_fk` ASC) VISIBLE,
-  INDEX `fk_carrito_cliente1_idx` (`id_cliente_fk` ASC) VISIBLE,
+  PRIMARY KEY (`id_carrito`, `id_producto_fk`),
+  INDEX `fk_carrito_producto_idx` (`id_producto_fk` ASC) VISIBLE,
+  INDEX `fk_carrito_cliente_idx` (`id_cliente_fk` ASC) VISIBLE,
   CONSTRAINT `fk_carrito_cliente1`
     FOREIGN KEY (`id_cliente_fk`)
     REFERENCES `e_commerce_db`.`cliente` (`id_cliente`),
   CONSTRAINT `fk_carrito_producto1`
     FOREIGN KEY (`id_producto_fk`)
-    REFERENCES `e_commerce_db`.`producto` (`id_producto`))
-ENGINE = InnoDB
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+) ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+
 
 
 -- -----------------------------------------------------
