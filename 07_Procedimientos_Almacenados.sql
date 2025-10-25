@@ -211,88 +211,141 @@ DELIMITER ;
 -- 15. sp_BuscarProductos: Realiza búsqueda avanzada de productos con filtros.
 
 DROP PROCEDURE IF EXISTS sp_BuscarProductos;
-
 DELIMITER //
-
-CREATE PROCEDURE sp_BuscarProductos()
+CREATE PROCEDURE sp_BuscarProductos(
+    IN p_nombre VARCHAR(150),
+    IN p_id_categoria INT,
+    IN p_precio_min DECIMAL(10,2),
+    IN p_precio_max DECIMAL(10,2)
+)
 BEGIN
-    -- Lógica para buscar productos con filtros
-
+    SELECT p.id_producto, p.nombre, p.descripcion, p.precio, p.precio_iva, c.nombre AS categoria
+    FROM producto p
+    JOIN producto_categoria pc ON p.id_producto = pc.id_producto_fk
+    JOIN categoria c ON pc.id_categoria_fk = c.id_categoria
+    WHERE (p.nombre LIKE CONCAT('%', p_nombre, '%') OR p_nombre IS NULL)
+      AND (pc.id_categoria_fk = p_id_categoria OR p_id_categoria IS NULL)
+      AND (p.precio BETWEEN p_precio_min AND p_precio_max OR p_precio_min IS NULL OR p_precio_max IS NULL);
 END //
-
 DELIMITER ;
 
 
 -- 16. sp_ObtenerDashboardAdmin: Devuelve KPIs para panel de administración.
 
 DROP PROCEDURE IF EXISTS sp_ObtenerDashboardAdmin;
-
 DELIMITER //
-
 CREATE PROCEDURE sp_ObtenerDashboardAdmin()
 BEGIN
-    -- Lógica para generar dashboard de administración
-
+    SELECT
+        (SELECT COUNT(*) FROM cliente) AS total_clientes,
+        (SELECT COUNT(*) FROM producto) AS total_productos,
+        (SELECT COUNT(*) FROM venta) AS total_ventas,
+        (SELECT SUM(total) FROM venta) AS ingresos_totales,
+        (SELECT COUNT(*) FROM venta WHERE estado='Pendiente') AS ventas_pendientes;
 END //
-
 DELIMITER ;
 
 
 -- 17. sp_ProcesarPago: Simula el procesamiento de un pago para una venta.
 
 DROP PROCEDURE IF EXISTS sp_ProcesarPago;
-
 DELIMITER //
-
-CREATE PROCEDURE sp_ProcesarPago()
+CREATE PROCEDURE sp_ProcesarPago(IN p_id_venta INT, IN p_monto DECIMAL(12,2))
 BEGIN
-    -- Lógica para procesar pago y actualizar estado de venta
+    DECLARE v_total DECIMAL(12,2);
+    SELECT total INTO v_total FROM venta WHERE id_venta = p_id_venta;
 
+    IF p_monto >= v_total THEN
+        UPDATE venta
+        SET estado = 'Procesando'
+        WHERE id_venta = p_id_venta;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Monto insuficiente para procesar el pago';
+    END IF;
 END //
-
-DELIMITER ;
+DELIMITER ;DELIMITER ;
 
 
 -- 18. sp_AñadirReseñaProducto: Permite a un cliente añadir reseña y calificación a un producto.
+
+CREATE TABLE IF NOT EXISTS reseña_producto (
+    id_reseña INT NOT NULL AUTO_INCREMENT,
+    id_cliente_fk INT NOT NULL,
+    id_producto_fk INT NOT NULL,
+    calificacion INT NOT NULL,
+    comentario TEXT NULL,
+    fecha_reseña DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_reseña),
+    INDEX idx_cliente (id_cliente_fk),
+    INDEX idx_producto (id_producto_fk),
+    CONSTRAINT fk_reseña_cliente
+        FOREIGN KEY (id_cliente_fk)
+        REFERENCES cliente(id_cliente)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_reseña_producto
+        FOREIGN KEY (id_producto_fk)
+        REFERENCES producto(id_producto)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci;
+
 
 DROP PROCEDURE IF EXISTS sp_AñadirReseñaProducto;
 
 DELIMITER //
 
-CREATE PROCEDURE sp_AñadirReseñaProducto()
+CREATE PROCEDURE sp_AñadirReseñaProducto(
+    IN p_id_cliente INT,
+    IN p_id_producto INT,
+    IN p_calificacion INT,
+    IN p_comentario TEXT
+)
 BEGIN
-    -- Lógica para añadir reseña y calificación de producto
-
+    IF p_calificacion < 1 OR p_calificacion > 5 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'La calificación debe estar entre 1 y 5';
+    ELSE
+        INSERT INTO reseña_producto(id_cliente_fk, id_producto_fk, calificacion, comentario, fecha_reseña)
+        VALUES (p_id_cliente, p_id_producto, p_calificacion, p_comentario, NOW());
+    END IF;
 END //
 
 DELIMITER ;
 
 
+
 -- 19. sp_ObtenerProductosRelacionados: Devuelve productos relacionados a uno dado.
 
 DROP PROCEDURE IF EXISTS sp_ObtenerProductosRelacionados;
-
 DELIMITER //
-
-CREATE PROCEDURE sp_ObtenerProductosRelacionados()
+CREATE PROCEDURE sp_ObtenerProductosRelacionados(IN p_id_producto INT)
 BEGIN
-    -- Lógica para obtener productos relacionados
-
+    SELECT DISTINCT p2.id_producto, p2.nombre, p2.precio, c.nombre AS categoria
+    FROM producto_categoria pc1
+    JOIN producto_categoria pc2 ON pc1.id_categoria_fk = pc2.id_categoria_fk
+    JOIN producto p2 ON pc2.id_producto_fk = p2.id_producto
+    JOIN categoria c ON pc2.id_categoria_fk = c.id_categoria
+    WHERE pc1.id_producto_fk = p_id_producto
+      AND p2.id_producto <> p_id_producto;
 END //
-
 DELIMITER ;
 
 
 -- 20. sp_MoverProductosEntreCategorias: Mueve productos de una categoría a otra de forma segura.
 
 DROP PROCEDURE IF EXISTS sp_MoverProductosEntreCategorias;
-
 DELIMITER //
-
-CREATE PROCEDURE sp_MoverProductosEntreCategorias()
+CREATE PROCEDURE sp_MoverProductosEntreCategorias(
+    IN p_id_producto INT,
+    IN p_id_categoria_origen INT,
+    IN p_id_categoria_destino INT
+)
 BEGIN
-    -- Lógica para mover productos entre categorías
+    DELETE FROM producto_categoria
+    WHERE id_producto_fk = p_id_producto
+      AND id_categoria_fk = p_id_categoria_origen;
 
+    INSERT INTO producto_categoria(id_producto_fk, id_categoria_fk)
+    VALUES (p_id_producto, p_id_categoria_destino);
 END //
-
 DELIMITER ;

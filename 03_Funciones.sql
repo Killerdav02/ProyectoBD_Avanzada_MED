@@ -287,117 +287,277 @@ DELIMITER ;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_DeterminarEstadoLealtad()
+CREATE OR REPLACE FUNCTION fn_DeterminarEstadoLealtad(p_id_cliente INT)
 RETURNS VARCHAR(20)
 DETERMINISTIC
 BEGIN
+    DECLARE total_gasto_mes DECIMAL(10,2);
     DECLARE estado VARCHAR(20);
 
-    -- Lógica para determinar estado de lealtad
+    -- Calcula el gasto total del cliente en el último mes
+    SELECT IFNULL(SUM(total), 0)
+    INTO total_gasto_mes
+    FROM venta
+    WHERE id_cliente_fk = p_id_cliente
+      AND fecha_venta >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH);
+
+    -- Asigna el estado según el gasto del último mes
+    IF total_gasto_mes < 50000 THEN
+        SET estado = 'Bronce';
+    ELSEIF total_gasto_mes BETWEEN 50000 AND 200000 THEN
+        SET estado = 'Plata';
+    ELSE
+        SET estado = 'Oro';
+    END IF;
 
     RETURN estado;
 END //
 
 DELIMITER ;
 
+DELIMITER //
+
+CREATE OR REPLACE PROCEDURE sp_ActualizarMembresias()
+BEGIN
+    UPDATE cliente
+    SET membresia = fn_DeterminarEstadoLealtad(id_cliente);
+END //
+
+DELIMITER ;
+
+
 -- 15. fn_GenerarSKU: Genera un código único basado en nombre y categoría.
+
+DROP FUNCTION IF EXISTS fn_GenerarSKU;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_GenerarSKU()
+CREATE FUNCTION fn_GenerarSKU(
+    p_nombre VARCHAR(100),
+    p_id_categoria INT
+)
 RETURNS VARCHAR(50)
 DETERMINISTIC
 BEGIN
+    DECLARE prefijo_cat VARCHAR(10) DEFAULT '';
+    DECLARE prefijo_nom VARCHAR(10) DEFAULT '';
+    DECLARE randnum VARCHAR(6);
     DECLARE sku VARCHAR(50);
 
-    -- Lógica para generar SKU
+    SELECT UPPER(LEFT(IFNULL(nombre, ''), 4))
+    INTO prefijo_cat
+    FROM categoria
+    WHERE id_categoria = p_id_categoria
+    LIMIT 1;
+
+    SET prefijo_nom = UPPER(LEFT(IFNULL(p_nombre, ''), 4));
+
+    IF prefijo_cat = '' THEN
+        SET prefijo_cat = 'GEN';
+    END IF;
+
+    SET randnum = LPAD(FLOOR(RAND() * 99999), 5, '0');
+
+    SET sku = CONCAT(prefijo_cat, '-', prefijo_nom, '-', randnum);
 
     RETURN sku;
 END //
 
 DELIMITER ;
 
+DELIMITER //
+
+CREATE TRIGGER trg_generar_sku_inventario
+BEFORE INSERT ON inventario
+FOR EACH ROW
+BEGIN
+    DECLARE v_nombre_producto VARCHAR(100);
+    DECLARE v_id_categoria INT;
+
+    -- Obtener nombre del producto
+    SELECT nombre INTO v_nombre_producto
+    FROM producto
+    WHERE id_producto = NEW.id_producto_fk
+    LIMIT 1;
+
+    -- Obtener una categoría asociada (la primera si hay varias)
+    SELECT id_categoria_fk INTO v_id_categoria
+    FROM producto_categoria
+    WHERE id_producto_fk = NEW.id_producto_fk
+    LIMIT 1;
+
+    -- Generar el SKU y asignarlo
+    SET NEW.sku = fn_GenerarSKU(v_nombre_producto, v_id_categoria);
+END //
+
+DELIMITER ;
+
+INSERT INTO
+    `e_commerce_db`.`inventario` (stock, id_producto_fk)
+VALUES (15, 95);
+
+INSERT INTO
+    `e_commerce_db`.`producto` (
+        nombre,
+        descripcion,
+        precio,
+        precio_iva,
+        activo,
+        peso
+    )
+VALUES (
+        'Laptop trabajo',
+        'Laptop de alto rendimiento para desarrollador',
+        3500000.00,
+        NULL,
+        1,
+        2.5
+    );
+
+
 -- 16. fn_CalcularIVA: Calcula el IVA sobre un monto total.
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_CalcularIVA()
+CREATE OR REPLACE FUNCTION fn_CalcularIVA(p_id_producto INT)
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
-    DECLARE total_iva DECIMAL(10,2);
+    DECLARE v_precio DECIMAL(10,2);
+    DECLARE v_iva DECIMAL(5,2);
+    DECLARE v_precio_final DECIMAL(10,2);
 
-    -- Lógica para calcular IVA
+    SELECT p.precio, c.iva
+    INTO v_precio, v_iva
+    FROM producto p
+    INNER JOIN categoria c ON p.id_categoria_fk = c.id_categoria
+    WHERE p.id_producto = p_id_producto;
 
-    RETURN total_iva;
+    SET v_precio_final = v_precio + (v_precio * (v_iva / 100));
+
+    RETURN v_precio_final;
 END //
 
 DELIMITER ;
 
 -- 17. fn_ObtenerStockTotalPorCategoria: Suma el stock de todos los productos de una categoría.
 
+DROP FUNCTION IF EXISTS fn_ObtenerStockTotalPorCategoria;
+
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_ObtenerStockTotalPorCategoria()
+CREATE FUNCTION fn_ObtenerStockTotalPorCategoria(p_id_categoria INT)
 RETURNS INT
 DETERMINISTIC
 BEGIN
-    DECLARE stock_total INT;
+    DECLARE stock_total INT DEFAULT 0;
 
-    -- Lógica para obtener stock total
+    SELECT COALESCE(SUM(i.stock), 0) INTO stock_total
+    FROM inventario i
+    INNER JOIN producto_categoria pc ON i.id_producto_fk = pc.id_producto_fk
+    WHERE pc.id_categoria_fk = p_id_categoria;
 
     RETURN stock_total;
 END //
 
 DELIMITER ;
 
+SELECT c.id_categoria, c.nombre, fn_ObtenerStockTotalPorCategoria(c.id_categoria) AS stock_total
+FROM categoria c;
+
+
+
+
 -- 18. fn_EstimarFechaEntrega: Calcula la fecha estimada de entrega según ubicación.
+
+DROP FUNCTION IF EXISTS fn_EstimarFechaEntrega;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_EstimarFechaEntrega()
+CREATE FUNCTION fn_EstimarFechaEntrega(p_id_venta INT)
 RETURNS DATE
 DETERMINISTIC
 BEGIN
     DECLARE fecha_estimada DATE;
+    DECLARE dias_envio INT;
 
-    -- Lógica para estimar fecha de entrega
+    SELECT
+        CASE te.tipo
+            WHEN 'liviano' THEN 4
+            WHEN 'mediano' THEN 6
+            WHEN 'pesado' THEN 8
+            ELSE 5  -- valor por defecto si no coincide
+        END
+    INTO dias_envio
+    FROM venta v
+    JOIN tarifa_envio te ON v.id_tarifa_envio_fk = te.id_tarifa_envio
+    WHERE v.id_venta = p_id_venta;
+
+    SELECT DATE_ADD(v.fecha_venta, INTERVAL dias_envio DAY)
+    INTO fecha_estimada
+    FROM venta v
+    WHERE v.id_venta = p_id_venta;
 
     RETURN fecha_estimada;
 END //
 
 DELIMITER ;
 
+
+SELECT fn_EstimarFechaEntrega(1) AS fecha_estimada;
+
+
 -- 19. fn_ConvertirMoneda: Convierte un monto a otra moneda con una tasa fija.
+
+DROP FUNCTION IF EXISTS fn_ConvertirMoneda;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_ConvertirMoneda()
-RETURNS DECIMAL(10,2)
+CREATE FUNCTION fn_ConvertirMoneda(
+    p_monto DECIMAL(12,2),
+    p_id_moneda INT
+)
+RETURNS DECIMAL(12,2)
 DETERMINISTIC
 BEGIN
-    DECLARE monto_convertido DECIMAL(10,2);
+    DECLARE monto_convertido DECIMAL(12,2);
+    DECLARE tasa DECIMAL(12,2);
 
-    -- Lógica para convertir moneda
+    SELECT valor INTO tasa
+    FROM moneda
+    WHERE id_moneda = p_id_moneda;
+
+    SET monto_convertido = p_monto * tasa;
 
     RETURN monto_convertido;
 END //
 
 DELIMITER ;
 
+SELECT
+    pv.id_producto_fk,
+    pv.id_venta_fk,
+    pv.precio_unitario,
+    fn_ConvertirMoneda(pv.precio_unitario, pv.id_moneda_fk) AS precio_convertido
+FROM producto_venta pv;
+
 -- 20. fn_ValidarComplejidadContraseña: Verifica si la contraseña cumple con criterios de seguridad.
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_ValidarComplejidadContraseña()
+CREATE FUNCTION fn_ValidarComplejidadContraseña(p_clave VARCHAR(255))
 RETURNS BOOLEAN
 DETERMINISTIC
 BEGIN
-    DECLARE es_segura BOOLEAN;
-
-    -- Lógica para validar complejidad de contraseña
-
-    RETURN es_segura;
+    RETURN
+        LENGTH(p_clave) >= 8
+        AND p_clave REGEXP '[A-Z]'
+        AND p_clave REGEXP '[a-z]'
+        AND p_clave REGEXP '[0-9]'
+        AND p_clave REGEXP '[!@#$%^&*(),.?":{}|<>]';
 END //
 
 DELIMITER ;
+
+SELECT fn_ValidarComplejidadContraseña('MiClave123!');
+
