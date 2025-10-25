@@ -1,4 +1,5 @@
 -- MySQL Workbench Forward Engineering
+SET time_zone = 'America/Bogota';
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
@@ -38,6 +39,10 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`cliente` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+  ALTER TABLE cliente
+  ADD COLUMN id_referido INT NULL,
+  ADD CONSTRAINT fk_referido
+  FOREIGN KEY (id_referido) REFERENCES cliente(id_cliente);
 
 
 -- -----------------------------------------------------
