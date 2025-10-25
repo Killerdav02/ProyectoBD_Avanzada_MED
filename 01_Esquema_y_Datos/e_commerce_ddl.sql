@@ -281,6 +281,8 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`venta` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+ALTER TABLE descuento 
+ADD COLUMN activo TINYINT DEFAULT 1 AFTER nombre;
 
 
 -- -----------------------------------------------------
@@ -415,3 +417,41 @@ CREATE TABLE auditoria_precio (
     fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
 );
+
+--- ================================================
+-- 1. Crear tabla para reporte de ventas semanal
+-- ================================================
+CREATE TABLE IF NOT EXISTS reporte_ventas_semanal (
+    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_reporte DATETIME NOT NULL,
+    total_ventas DECIMAL(12,2) NOT NULL,
+    total_productos INT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS lista_reabastecimiento (
+    id_lista INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto_fk INT NOT NULL,
+    nombre_producto VARCHAR(150) NOT NULL,
+    stock_actual INT NOT NULL,
+    stock_minimo INT NOT NULL,
+    cantidad_sugerida INT NOT NULL,
+    fecha_generacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('pendiente', 'procesado', 'cancelado') DEFAULT 'pendiente',
+    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto),
+    INDEX idx_fecha_estado (fecha_generacion, estado)
+) ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+CREATE TABLE IF NOT EXISTS log_mantenimiento_indices (
+    id_log INT AUTO_INCREMENT PRIMARY KEY,
+    tabla_nombre VARCHAR(100) NOT NULL,
+    accion VARCHAR(50) NOT NULL,
+    fecha_ejecucion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('exitoso', 'fallido') DEFAULT 'exitoso',
+    mensaje TEXT,
+    INDEX idx_fecha (fecha_ejecucion)
+) ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
