@@ -166,122 +166,201 @@ SELECT fn_EsClienteNuevo(1) AS es_cliente_nuevo;
 
 -- 7. fn_CalcularCostoEnvio: Calcula el costo de envío basado en el peso total.
 
-DELIMITER //
+DELIMITER $$
 
-CREATE OR REPLACE FUNCTION fn_CalcularCostoEnvio()
+CREATE FUNCTION `calcular_costo_envio`(id_venta INT) 
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
+    DECLARE peso_total DECIMAL(10,2);
+    DECLARE tipo_envio ENUM('liviano', 'mediano', 'pesado');
     DECLARE costo_envio DECIMAL(10,2);
 
-    -- Lógica para calcular costo de envío
+    SELECT SUM(p.peso * pv.cantidad) INTO peso_total
+    FROM producto_venta pv
+    JOIN producto p ON pv.id_producto_fk = p.id_producto
+    WHERE pv.id_venta_fk = id_venta;
+
+    IF peso_total <= 5 THEN
+        SET tipo_envio = 'liviano';
+    ELSEIF peso_total > 5 AND peso_total <= 20 THEN
+        SET tipo_envio = 'mediano';
+    ELSE
+        SET tipo_envio = 'pesado';
+    END IF;
+
+    SELECT te.valor INTO costo_envio
+    FROM tarifa_envio te
+    WHERE te.tipo = tipo_envio;
 
     RETURN costo_envio;
-END //
+END$$
 
 DELIMITER ;
+--- como invocarla:
+DELIMITER $$
 
--- 8. fn_AplicarDescuento: Aplica un porcentaje de descuento a un monto dado.
-
-DELIMITER //
-
-CREATE OR REPLACE FUNCTION fn_AplicarDescuento()
-RETURNS DECIMAL(10,2)
+CREATE FUNCTION aplicar_descuento_venta(p_id_venta INT, p_id_descuento INT)
+RETURNS DECIMAL(12,2)
 DETERMINISTIC
+READS SQL DATA
 BEGIN
-    DECLARE total_con_descuento DECIMAL(10,2);
-
-    -- Lógica para aplicar descuento
-
+    DECLARE total_venta DECIMAL(12,2);
+    DECLARE descuento DECIMAL(10,2);
+    DECLARE total_con_descuento DECIMAL(12,2);
+    
+    SELECT total INTO total_venta
+    FROM venta
+    WHERE id_venta = p_id_venta;
+    
+    SELECT valor INTO descuento
+    FROM descuento
+    WHERE id_descuento = p_id_descuento;
+    
+    -- Calcular el total con el descuento (asumiendo descuento como porcentaje)
+    SET total_con_descuento = total_venta * (1 - (descuento / 100));
+    
+    -- Devolver el total con descuento
     RETURN total_con_descuento;
-END //
+END$$
 
 DELIMITER ;
+
+--- como usarla:
+
+-- hay que actualizar o si no no sirve para nada
+SELECT aplicar_descuento_venta(2, 3) AS nuevo_total;
+
+UPDATE venta
+SET total = aplicar_descuento_venta(2, 3),
+    id_descuento_fk = 3
+WHERE id_venta = 2;
+
+SELECT id_venta, total
+FROM venta
+WHERE id_venta = 2;
 
 -- 9. fn_ObtenerUltimaFechaCompra: Devuelve la fecha de la última compra de un cliente.
 
-DELIMITER //
+DELIMITER $$
 
-CREATE OR REPLACE FUNCTION fn_ObtenerUltimaFechaCompra()
-RETURNS DATE
+CREATE FUNCTION ObtenerUltimaFechaCompra(id_cliente INT)
+RETURNS DATETIME
 DETERMINISTIC
 BEGIN
-    DECLARE ultima_fecha DATE;
+    DECLARE ultima_fecha DATETIME;
 
-    -- Lógica para obtener la última compra
+    SELECT MAX(fecha_venta) INTO ultima_fecha
+    FROM venta
+    WHERE id_cliente_fk = id_cliente;
 
     RETURN ultima_fecha;
-END //
+END$$
 
 DELIMITER ;
+--- como usar:
+
+SELECT ObtenerUltimaFechaCompra(6) AS ultima_fecha_compra;
+
 
 -- 10. fn_ValidarFormatoEmail: Comprueba si el correo tiene formato válido.
 
-DELIMITER //
+DELIMITER $$
 
-CREATE OR REPLACE FUNCTION fn_ValidarFormatoEmail()
+CREATE FUNCTION validar_email(p_email VARCHAR(120))
 RETURNS BOOLEAN
 DETERMINISTIC
+NO SQL
 BEGIN
-    DECLARE es_valido BOOLEAN;
-
-    -- Lógica para validar formato de correo
-
+    DECLARE es_valido BOOLEAN DEFAULT FALSE;
+    
+    IF p_email IS NOT NULL 
+        AND p_email != ''
+        AND p_email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
+        AND LOCATE('@', p_email) > 0
+        AND LOCATE('.', p_email) > LOCATE('@', p_email)
+        AND LENGTH(p_email) >= 5
+        AND LENGTH(p_email) <= 120
+    THEN
+        SET es_valido = TRUE;
+    END IF;
+    
     RETURN es_valido;
-END //
+END$$
 
 DELIMITER ;
+--- como usar:
+SELECT validar_email('quionezmix@gmail.com') AS resultado;
 
 -- 11. fn_ObtenerNombreCategoria: Devuelve el nombre de la categoría de un producto.
 
-DELIMITER //
+DELIMITER $$
 
-CREATE OR REPLACE FUNCTION fn_ObtenerNombreCategoria()
-RETURNS VARCHAR(100)
+CREATE FUNCTION obtener_nombre_categoria(id_producto INT)
+RETURNS VARCHAR(255)
 DETERMINISTIC
 BEGIN
-    DECLARE nombre_categoria VARCHAR(100);
+    DECLARE nombre_categoria VARCHAR(255);
 
-    -- Lógica para obtener nombre de categoría
+    SELECT c.nombre INTO nombre_categoria
+    FROM categoria c
+    JOIN producto_categoria pc ON c.id_categoria = pc.id_categoria_fk
+    WHERE pc.id_producto_fk = id_producto
+    LIMIT 1;
 
     RETURN nombre_categoria;
-END //
+END$$
 
 DELIMITER ;
+--- como usar:
+SELECT obtener_nombre_categoria(60) AS nombre_categoria;
 
 -- 12. fn_ContarVentasCliente: Cuenta el número total de compras realizadas por un cliente.
 
-DELIMITER //
+DELIMITER $$
 
-CREATE OR REPLACE FUNCTION fn_ContarVentasCliente()
+CREATE FUNCTION contar_compras_cliente(id_cliente INT)
 RETURNS INT
 DETERMINISTIC
 BEGIN
-    DECLARE total_ventas INT;
+    DECLARE num_compras INT;
 
-    -- Lógica para contar ventas
+    SELECT COUNT(*) INTO num_compras
+    FROM venta
+    WHERE id_cliente_fk = id_cliente;
 
-    RETURN total_ventas;
-END //
+    RETURN num_compras;
+END$$
 
 DELIMITER ;
+--- como usar:
+SELECT contar_compras_cliente(1) AS total_compras;
 
 -- 13. fn_CalcularDiasDesdeUltimaCompra: Devuelve los días desde la última compra.
 
-DELIMITER //
-
-CREATE OR REPLACE FUNCTION fn_CalcularDiasDesdeUltimaCompra()
+CREATE FUNCTION dias_desde_ultima_compra(id_cliente INT)
 RETURNS INT
 DETERMINISTIC
 BEGIN
-    DECLARE dias INT;
+    DECLARE ultima_compra DATETIME;
+    DECLARE dias_transcurridos INT;
 
-    -- Lógica para calcular días desde última compra
+    SELECT MAX(fecha_venta) INTO ultima_compra
+    FROM venta
+    WHERE id_cliente_fk = id_cliente;
 
-    RETURN dias;
-END //
+    IF ultima_compra IS NOT NULL THEN
+        SET dias_transcurridos = DATEDIFF(NOW(), ultima_compra);
+    ELSE
+        SET dias_transcurridos = NULL;
+    END IF;
+
+    RETURN dias_transcurridos;
+END$$
 
 DELIMITER ;
+--- como usar:
+SELECT dias_desde_ultima_compra(2) AS dias_desde_ultima_compra;
 
 -- 14. fn_DeterminarEstadoLealtad: Asigna un estado (Bronce, Plata, Oro) según el gasto total.
 
