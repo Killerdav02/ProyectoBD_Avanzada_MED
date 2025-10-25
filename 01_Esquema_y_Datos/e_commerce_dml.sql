@@ -898,7 +898,6 @@ VALUES (
 
 --- insert carrito
 
-
 INSERT INTO `e_commerce_db`.`carrito` (`id_carrito`, `id_producto_fk`, `id_cliente_fk`, `cantidad`) VALUES
 (2, 5, 2, 1),
 (2, 6, 2, 1),
@@ -1171,9 +1170,23 @@ VALUES
 
 --- insert venta
 
-INSERT INTO `e_commerce_db`.`venta` (`fecha_venta`, `estado`,`total`,`id_cliente_fk`,`id_tienda_fk`,`id_descuento_fk`,`id_tarifa_envio_fk`)
+INSERT INTO `e_commerce_db`.`venta` (`fecha_venta`, `estado`, `total`, `id_cliente_fk`, `id_tienda_fk`, `id_descuento_fk`, `id_tarifa_envio_fk`)
 VALUES
-(now(), 'Pendiente','0.00','1','1','1','2');
+(NOW(), 'Pendiente', 0.00, 1, 1, 1, 2),
+(NOW(), 'Entregado', 85000.00, 2, 1, 1, 1),
+(NOW(), 'Entregado', 90000.00, 3, 1, 1, 1),
+(NOW(), 'Enviado', 95000.00, 4, 1, 1, 1),
+(NOW(), 'Entregado', 88000.00, 5, 1, 1, 1),
+(NOW(), 'Entregado', 65000.00, 6, 1, 1, 1),
+(NOW(), 'Entregado', 70000.00, 7, 1, 1, 1),
+(NOW(), 'Procesando', 68000.00, 8, 1, 1, 1),
+(NOW(), 'Entregado', 72000.00, 9, 1, 1, 1),
+(NOW(), 'Entregado', 45000.00, 10, 1, 1, 1),
+(NOW(), 'Entregado', 50000.00, 11, 1, 1, 1),
+(NOW(), 'Enviado', 48000.00, 12, 1, 1, 1),
+(NOW(), 'Entregado', 35000.00, 13, 1, 1, 1),
+(NOW(), 'Procesando', 40000.00, 14, 1, 1, 1),
+(NOW(), 'Pendiente', 38000.00, 15, 1, 1, 1);
 
 
 --- insert producto_venta
@@ -1181,7 +1194,61 @@ VALUES
 INSERT INTO `e_commerce_db`.`producto_venta` (`id_producto_fk`, `id_venta_fk`, `cantidad`, `precio_unitario`, `id_moneda_fk`)
 VALUES
 (1, 1, 2, 10000.00, 1),
-(2, 1, 3, 15000.00, 1);
+(2, 1, 3, 15000.00, 1),
+
+(5, 2, 1, 50000.00, 1),
+(6, 2, 1, 20000.00, 1),
+(7, 2, 1, 15000.00, 1),
+
+(5, 3, 1, 50000.00, 1),
+(6, 3, 2, 20000.00, 1),
+(7, 3, 1, 15000.00, 1),
+
+(5, 4, 1, 50000.00, 1),
+(6, 4, 1, 20000.00, 1),
+(7, 4, 1, 15000.00, 1),
+(20, 4, 2, 5000.00, 1),
+
+(5, 5, 1, 50000.00, 1),
+(6, 5, 1, 20000.00, 1),
+(7, 5, 2, 9000.00, 1),
+
+(15, 6, 1, 30000.00, 1),
+(16, 6, 1, 18000.00, 1),
+(17, 6, 2, 8500.00, 1),
+
+(15, 7, 1, 30000.00, 1),
+(16, 7, 2, 18000.00, 1),
+(17, 7, 1, 8500.00, 1),
+
+(15, 8, 1, 30000.00, 1),
+(16, 8, 1, 18000.00, 1),
+(17, 8, 1, 8500.00, 1),
+(33, 8, 3, 3833.33, 1),
+
+(15, 9, 1, 30000.00, 1),
+(16, 9, 1, 18000.00, 1),
+(17, 9, 2, 12000.00, 1),
+
+(25, 10, 2, 15000.00, 1),
+(26, 10, 1, 15000.00, 1),
+
+(25, 11, 1, 15000.00, 1),
+(26, 11, 2, 15000.00, 1),
+(40, 11, 1, 5000.00, 1),
+
+(25, 12, 3, 12000.00, 1),
+(26, 12, 1, 12000.00, 1),
+
+(30, 13, 1, 25000.00, 1),
+(31, 13, 4, 2500.00, 1),
+
+(30, 14, 1, 25000.00, 1),
+(31, 14, 3, 3000.00, 1),
+(45, 14, 1, 5000.00, 1),
+
+(30, 15, 1, 25000.00, 1),
+(31, 15, 2, 6500.00, 1);
 
 --- insert proveedor
 
@@ -1192,65 +1259,65 @@ VALUES
 ('Proveedor Ropa', 'contacto@proveedorropa.com'),
 ('Proveedor Electronicos', 'contacto@proveedorelectronicos.com');
 
---- insert telefono
+--- proveedor_tienda_producto
 
-INSERT INTO `e_commerce_db`.`proveedor_tienda_producto` (`condiciones`, `estado`, `id_tienda_fk`, `id_proveedor_fk`, `id_producto_fk`)
+INSERT INTO `e_commerce_db`.`proveedor_tienda_producto` (`condiciones`, `id_tienda_fk`, `id_proveedor_fk`, `id_producto_fk`)
 VALUES
-
-  ('Condición A', 'activo', 1, 1, 1),
-  ('Condición B', 'activo', 1, 1, 2),
-  ('Condición C', 'activo', 1, 1, 3),
-  ('Condición A', 'activo', 1, 1, 4),
-  ('Condición B', 'activo', 1, 1, 5),
-  ('Condición C', 'activo', 1, 1, 6),
-  ('Condición A', 'activo', 1, 1, 7),
-  ('Condición B', 'activo', 1, 1, 8),
-  ('Condición C', 'activo', 1, 1, 9),
-  ('Condición A', 'activo', 1, 1, 10),
-  ('Condición B', 'activo', 1, 1, 11),
-  ('Condición C', 'activo', 1, 1, 12),
-
-
-  ('Condición A', 'activo', 1, 2, 13),
-  ('Condición B', 'activo', 1, 2, 14),
-  ('Condición C', 'activo', 1, 2, 15),
-  ('Condición A', 'activo', 1, 2, 16),
-  ('Condición B', 'activo', 1, 2, 17),
-  ('Condición C', 'activo', 1, 2, 18),
-  ('Condición A', 'activo', 1, 2, 19),
-  ('Condición B', 'activo', 1, 2, 20),
-  ('Condición C', 'activo', 1, 2, 21),
-  ('Condición A', 'activo', 1, 2, 22),
-  ('Condición B', 'activo', 1, 2, 23),
-  ('Condición C', 'activo', 1, 2, 24),
+('Condición A', 1, 1, 1),
+('Condición B', 1, 1, 2),
+('Condición C', 1, 1, 3),
+('Condición A', 1, 1, 4),
+('Condición B', 1, 1, 5),
+('Condición C', 1, 1, 6),
+('Condición A', 1, 1, 7),
+('Condición B', 1, 1, 8),
+('Condición C', 1, 1, 9),
+('Condición A', 1, 1, 10),
+('Condición B', 1, 1, 11),
+('Condición C', 1, 1, 12),
 
 
-  ('Condición A', 'activo', 1, 3, 25),
-  ('Condición B', 'activo', 1, 3, 26),
-  ('Condición C', 'activo', 1, 3, 27),
-  ('Condición A', 'activo', 1, 3, 28),
-  ('Condición B', 'activo', 1, 3, 29),
-  ('Condición C', 'activo', 1, 3, 30),
-  ('Condición A', 'activo', 1, 3, 31),
-  ('Condición B', 'activo', 1, 3, 32),
-  ('Condición C', 'activo', 1, 3, 33),
-  ('Condición A', 'activo', 1, 3, 34),
-  ('Condición B', 'activo', 1, 3, 35),
-  ('Condición C', 'activo', 1, 3, 36),
+('Condición A', 1, 2, 13),
+('Condición B', 1, 2, 14),
+('Condición C', 1, 2, 15),
+('Condición A', 1, 2, 16),
+('Condición B', 1, 2, 17),
+('Condición C', 1, 2, 18),
+('Condición A', 1, 2, 19),
+('Condición B', 1, 2, 20),
+('Condición C', 1, 2, 21),
+('Condición A', 1, 2, 22),
+('Condición B', 1, 2, 23),
+('Condición C', 1, 2, 24),
 
 
-  ('Condición A', 'activo', 1, 4, 37),
-  ('Condición B', 'activo', 1, 4, 38),
-  ('Condición C', 'activo', 1, 4, 39),
-  ('Condición A', 'activo', 1, 4, 40),
-  ('Condición B', 'activo', 1, 4, 41),
-  ('Condición C', 'activo', 1, 4, 42),
-  ('Condición A', 'activo', 1, 4, 43),
-  ('Condición B', 'activo', 1, 4, 44),
-  ('Condición C', 'activo', 1, 4, 45),
-  ('Condición A', 'activo', 1, 4, 46),
-  ('Condición B', 'activo', 1, 4, 47),
-  ('Condición C', 'activo', 1, 4, 48);
+('Condición A', 1, 3, 25),
+('Condición B', 1, 3, 26),
+('Condición C', 1, 3, 27),
+('Condición A', 1, 3, 28),
+('Condición B', 1, 3, 29),
+('Condición C', 1, 3, 30),
+('Condición A', 1, 3, 31),
+('Condición B', 1, 3, 32),
+('Condición C', 1, 3, 33),
+('Condición A', 1, 3, 34),
+('Condición B', 1, 3, 35),
+('Condición C', 1, 3, 36),
+
+
+('Condición A', 1, 4, 37),
+('Condición B', 1, 4, 38),
+('Condición C', 1, 4, 39),
+('Condición A', 1, 4, 40),
+('Condición B', 1, 4, 41),
+('Condición C', 1, 4, 42),
+('Condición A', 1, 4, 43),
+('Condición B', 1, 4, 44),
+('Condición C', 1, 4, 45),
+('Condición A', 1, 4, 46),
+('Condición B', 1, 4, 47),
+('Condición C', 1, 4, 48);
+
 
 
 --- insert telefono
