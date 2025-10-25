@@ -1,4 +1,5 @@
 -- MySQL Workbench Forward Engineering
+SET time_zone = 'America/Bogota';
 
 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
@@ -38,6 +39,10 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`cliente` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+  ALTER TABLE cliente
+  ADD COLUMN id_referido INT NULL,
+  ADD CONSTRAINT fk_referido
+  FOREIGN KEY (id_referido) REFERENCES cliente(id_cliente);
 
 
 -- -----------------------------------------------------
@@ -66,13 +71,16 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`carrito` (
   `id_producto_fk` INT NOT NULL,
   `id_cliente_fk` INT NOT NULL,
   `cantidad` INT NULL DEFAULT NULL,
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `estado` ENUM('activo', 'abandonado', 'convertido') NOT NULL DEFAULT 'activo',
   PRIMARY KEY (`id_carrito`, `id_producto_fk`),
   INDEX `fk_carrito_producto_idx` (`id_producto_fk` ASC) VISIBLE,
   INDEX `fk_carrito_cliente_idx` (`id_cliente_fk` ASC) VISIBLE,
-  CONSTRAINT `fk_carrito_cliente1`
+  CONSTRAINT `fk_carrito_cliente`
     FOREIGN KEY (`id_cliente_fk`)
     REFERENCES `e_commerce_db`.`cliente` (`id_cliente`),
-  CONSTRAINT `fk_carrito_producto1`
+  CONSTRAINT `fk_carrito_producto`
     FOREIGN KEY (`id_producto_fk`)
     REFERENCES `e_commerce_db`.`producto` (`id_producto`)
 ) ENGINE = InnoDB
@@ -368,7 +376,42 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`venta_eliminada`(
+  `id_venta_fk` INT PRIMARY KEY,
+  `fecha_eliminacion` DATETIME NOT NULL,
+  `motivo` TEXT NOT NULL,
+  CONSTRAINT `venta_elimina_fk`
+  FOREIGN KEY ( `id_venta_fk` )
+  REFERENCES `e_commerce_db`.`venta` (`id_venta`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+-- -----------------------------------------------------
+-- Table `e_commerce_db`.`auditoria_cliente`
+-- -----------------------------------------------------
+CREATE TABLE auditoria_cliente (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente_fk INT NOT NULL,
+    nombre VARCHAR(200),
+    email VARCHAR(200),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
+);
+-- -----------------------------------------------------
+-- Table `e_commerce_db`.`auditoria_cliente`
+-- -----------------------------------------------------
+CREATE TABLE auditoria_precio (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto_fk INT NOT NULL,
+    precio_anterior DECIMAL(10,2) NOT NULL,
+    precio_nuevo DECIMAL(10,2) NOT NULL,
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
+);
