@@ -53,22 +53,22 @@ END //
 DELIMITER ;
 
 --//  crear una venta nueva///
-INSERT INTO venta 
+INSERT INTO venta
 (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (NOW(), 'Pendiente', 0.00, 1, 1, 1, 2);
 
 SET @id_venta_nueva = LAST_INSERT_ID();
 
 --//2️⃣ Insertar productos en la venta//
-INSERT INTO producto_venta 
+INSERT INTO producto_venta
 (id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
-VALUES 
+VALUES
 (1, @id_venta_nueva, 5, 10000.00, 1);
 
-INSERT INTO producto_venta 
+INSERT INTO producto_venta
 (id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
-VALUES 
+VALUES
 (2, @id_venta_nueva, 3, 15000.00, 1);
 
 --//3️⃣ Actualizar cantidad si el producto ya existe--//
@@ -80,11 +80,11 @@ WHERE id_producto_fk = 1
 
 --//Verificar los registros--//
 
-SELECT * 
+SELECT *
 FROM producto_venta
 WHERE id_venta_fk = @id_venta_nueva;
 
-SELECT * 
+SELECT *
 FROM venta
 WHERE id_venta = @id_venta_nueva;
 
@@ -116,17 +116,17 @@ DELIMITER ;
 
 
 -- Creamos una nueva venta
-INSERT INTO venta 
+INSERT INTO venta
 (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (NOW(), 'Pendiente', 0.00, 1, 1, 1, 2);
 
 SET @id_venta_nueva = LAST_INSERT_ID();
 
 -- Insertamos productos en la venta
-INSERT INTO producto_venta 
+INSERT INTO producto_venta
 (id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
-VALUES 
+VALUES
 (1, @id_venta_nueva, 5, 10000.00, 1),
 (2, @id_venta_nueva, 3, 15000.00, 1);
 
@@ -211,14 +211,14 @@ DELIMITER ;
 
 --2️⃣ Insertar un nuevo cliente (para probar el trigger)--
 
-INSERT INTO cliente 
+INSERT INTO cliente
 (nombre, apellido, email, clave, fecha_nacimiento, estado, membresia, puntos)
 VALUES
 ('Juan', 'Perez', 'juan.perez@email.com', '12345', '1990-05-15', 'activo', 'oro', 0);
 
 ---3️⃣ Verificar que se registró en la auditoría---ç
 
-SELECT * 
+SELECT *
 FROM auditoria_cliente
 WHERE id_cliente_fk = LAST_INSERT_ID();
 
@@ -571,5 +571,4 @@ VALUES
 (7, 5, 3, 15000.00, 1),
 (44, 5, 3, 15000.00, 1),
 (37, 5, 3, 15000.00, 1);
-
 
