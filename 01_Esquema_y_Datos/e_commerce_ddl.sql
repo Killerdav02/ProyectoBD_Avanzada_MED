@@ -368,6 +368,18 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`venta_eliminada`(
+  `id_venta_fk` INT PRIMARY KEY,
+  `fecha_eliminacion` DATETIME NOT NULL,
+  `motivo` TEXT NOT NULL,
+  CONSTRAINT `venta_elimina_fk`
+  FOREIGN KEY ( `id_venta_fk` )
+  REFERENCES `e_commerce_db`.`venta` (`id_venta`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
