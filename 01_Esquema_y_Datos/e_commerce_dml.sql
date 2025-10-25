@@ -1164,9 +1164,13 @@ VALUES
 
 --- insert descuento
 
-INSERT INTO `e_commerce_db`.`descuento` (`id_descuento`,`tipo`, `valor`, `nombre`, `fecha_inicio`, `fecha_fin`)
+INSERT INTO `e_commerce_db`.`descuento` 
+    (`id_descuento`, `tipo`, `valor`, `nombre`)
 VALUES
-(1,'puntos', 0.10, 'porcentaje', '2025-01-10', '2025-12-31');
+    (1, 'puntos', 0.10, 'porcentaje'),
+    (2, 'cumpleaños', 0.10, 'porcentaje'),
+    (3, 'categoria', 0.10, 'porcentaje'),
+    (4, 'producto', 0.10, 'porcentaje');
 
 --- insert venta
 
