@@ -1,87 +1,148 @@
 -- 1. fn_CalcularTotalVenta: Calcula el monto total de una venta específica.
+-- Eliminamos la función si ya existe
+DROP FUNCTION IF EXISTS fn_total_venta;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_CalcularTotalVenta()
-RETURNS DECIMAL(10,2)
+CREATE FUNCTION fn_total_venta(p_id_venta INT)
+RETURNS DECIMAL(12,2)
 DETERMINISTIC
 BEGIN
-    DECLARE total DECIMAL(10,2);
+    DECLARE total DECIMAL(12,2);
 
-    -- Lógica para calcular el total de una venta
+    -- Calculamos la suma de cantidad * precio_unitario para la venta indicada
+    SELECT SUM(cantidad * precio_unitario)
+    INTO total
+    FROM producto_venta
+    WHERE id_venta_fk = p_id_venta;
+
+    -- Si no hay registros, devolvemos 0
+    IF total IS NULL THEN
+        SET total = 0;
+    END IF;
 
     RETURN total;
 END //
 
 DELIMITER ;
 
+-- Calcular el total de la venta con id 2
+SELECT fn_total_venta(2) AS total_venta;
+
+
 -- 2. fn_VerificarDisponibilidadStock: Valida si hay stock suficiente para un producto.
+-- Eliminamos la función si ya existe
+DROP FUNCTION IF EXISTS fn_VerificarDisponibilidadStock;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_VerificarDisponibilidadStock()
+CREATE FUNCTION fn_VerificarDisponibilidadStock(p_id_producto INT, p_cantidad INT)
 RETURNS BOOLEAN
 DETERMINISTIC
 BEGIN
-    DECLARE disponible BOOLEAN;
+    DECLARE stock_actual INT;
 
-    -- Lógica para verificar stock
+    -- Obtenemos el stock actual del producto
+    SELECT stock INTO stock_actual
+    FROM inventario
+    WHERE id_producto_fk = p_id_producto;
 
-    RETURN disponible;
+    -- Si no hay registro, asumimos 0
+    IF stock_actual IS NULL THEN
+        SET stock_actual = 0;
+    END IF;
+
+    -- Retornamos TRUE si hay suficiente stock, FALSE si no
+    RETURN stock_actual >= p_cantidad;
 END //
 
 DELIMITER ;
 
+-- Verificar si hay al menos 5 unidades del producto con id 1
+SELECT fn_VerificarDisponibilidadStock(1, 5) AS stock_suficiente;
+
 -- 3. fn_ObtenerPrecioProducto: Devuelve el precio actual de un producto.
+-- Eliminamos la función si ya existe
+DROP FUNCTION IF EXISTS fn_ObtenerPrecioProducto;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_ObtenerPrecioProducto()
+CREATE FUNCTION fn_ObtenerPrecioProducto(p_id_producto INT)
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
-    DECLARE precio DECIMAL(10,2);
+    DECLARE precio_actual DECIMAL(10,2);
 
-    -- Lógica para obtener el precio
+    SELECT precio INTO precio_actual
+    FROM producto
+    WHERE id_producto = p_id_producto;
 
-    RETURN precio;
+    RETURN precio_actual;
 END //
 
 DELIMITER ;
 
+-- Obtener el precio del producto con id 1
+SELECT fn_ObtenerPrecioProducto(1) AS precio;
+
 -- 4. fn_CalcularEdadCliente: Calcula la edad de un cliente a partir de su fecha de nacimiento.
+
+-- Eliminamos la función si ya existe
+DROP FUNCTION IF EXISTS fn_CalcularEdadCliente;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_CalcularEdadCliente()
+CREATE FUNCTION fn_CalcularEdadCliente(p_id_cliente INT)
 RETURNS INT
 DETERMINISTIC
 BEGIN
     DECLARE edad INT;
+    DECLARE fecha_nac DATE;
 
-    -- Lógica para calcular edad
+    -- Obtenemos la fecha de nacimiento del cliente
+    SELECT STR_TO_DATE(fecha_nacimiento, '%Y-%m-%d') INTO fecha_nac
+    FROM cliente
+    WHERE id_cliente = p_id_cliente;
+
+    -- Calculamos la edad
+    SET edad = TIMESTAMPDIFF(YEAR, fecha_nac, CURDATE());
 
     RETURN edad;
 END //
 
 DELIMITER ;
 
+-- Calcular la edad del cliente con id 1
+SELECT fn_CalcularEdadCliente(1) AS edad;
+
+
 -- 5. fn_FormatearNombreCompleto: Devuelve el nombre y apellido de un cliente en formato estandarizado.
+-- Eliminamos la función si ya existe
+DROP FUNCTION IF EXISTS fn_FormatearNombreCompleto;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_FormatearNombreCompleto()
-RETURNS VARCHAR(200)
+CREATE FUNCTION fn_FormatearNombreCompleto(p_id_cliente INT)
+RETURNS VARCHAR(250)
 DETERMINISTIC
 BEGIN
-    DECLARE nombre_completo VARCHAR(200);
+    DECLARE nombre_completo VARCHAR(250);
 
-    -- Lógica para concatenar y formatear nombre completo
+    -- Concatenamos nombre y apellido y estandarizamos capitalización
+    SELECT CONCAT(UCASE(LEFT(nombre, 1)), LCASE(SUBSTRING(nombre, 2)), ' ',
+                  UCASE(LEFT(apellido, 1)), LCASE(SUBSTRING(apellido, 2)))
+    INTO nombre_completo
+    FROM cliente
+    WHERE id_cliente = p_id_cliente;
 
     RETURN nombre_completo;
 END //
 
 DELIMITER ;
+
+
+-- Obtener el nombre completo del cliente con id 1
+SELECT fn_FormatearNombreCompleto(1) AS nombre_completo;
 
 -- 6. fn_EsClienteNuevo: Devuelve TRUE si un cliente realizó su primera compra en los últimos 30 días.
 
@@ -99,6 +160,9 @@ BEGIN
 END //
 
 DELIMITER ;
+
+-- Verificar si el cliente con id 1 es nuevo
+SELECT fn_EsClienteNuevo(1) AS es_cliente_nuevo;
 
 -- 7. fn_CalcularCostoEnvio: Calcula el costo de envío basado en el peso total.
 
