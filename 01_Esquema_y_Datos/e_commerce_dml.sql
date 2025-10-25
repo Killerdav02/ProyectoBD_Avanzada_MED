@@ -1189,6 +1189,12 @@ VALUES
 (NOW(), 'Pendiente', 38000.00, 15, 1, 1, 1);
 
 
+INSERT INTO venta 
+(id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk, total, estado)
+VALUES
+(1, 1, NULL, NULL, 0.00, 'Pendiente');
+
+
 --- insert producto_venta
 
 INSERT INTO `e_commerce_db`.`producto_venta` (`id_producto_fk`, `id_venta_fk`, `cantidad`, `precio_unitario`, `id_moneda_fk`)

@@ -1,100 +1,282 @@
 -- 1. trg_audit_precio_producto_after_update: Guarda un log de cambios de precios.
-
-DROP TRIGGER IF EXISTS trg_audit_precio_producto_after_update;
-
 DELIMITER //
+
 CREATE TRIGGER trg_audit_precio_producto_after_update
 AFTER UPDATE ON producto
 FOR EACH ROW
 BEGIN
-    -- Lógica para registrar los cambios de precio
-
+    -- Solo registramos si el precio realmente cambió
+    IF OLD.precio <> NEW.precio THEN
+        INSERT INTO auditoria_precio (id_producto_fk, precio_anterior, precio_nuevo, fecha_cambio)
+        VALUES (OLD.id_producto, OLD.precio, NEW.precio, NOW());
+    END IF;
 END //
+
 DELIMITER ;
+
+
+--Prueba el trigger haciendo un UPDATE en producto:--
+UPDATE producto
+SET precio = 150
+WHERE id_producto = 1;
+
+-- Verifica que se haya registrado el cambio:--
+SELECT * FROM auditoria_precio;
+
+--//////////////////////////////////////////////////////////////////////////////////////////////////////////////--
+
 
 -- 2. trg_check_stock_before_insert_venta: Verifica el stock antes de registrar una venta.
 
 DROP TRIGGER IF EXISTS trg_check_stock_before_insert_venta;
-
 DELIMITER //
+
 CREATE TRIGGER trg_check_stock_before_insert_venta
-BEFORE INSERT ON venta_detalle
+BEFORE INSERT ON producto_venta
 FOR EACH ROW
 BEGIN
-    -- Lógica para verificar el stock disponible
+    DECLARE stock_actual INT;
 
+    -- Obtenemos el stock actual del producto
+    SELECT stock INTO stock_actual
+    FROM inventario
+    WHERE id_producto_fk = NEW.id_producto_fk;
+
+    -- Si la cantidad solicitada es mayor al stock disponible, cancelamos la inserción
+    IF stock_actual < NEW.cantidad THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No hay suficiente stock para este producto';
+    END IF;
 END //
+
 DELIMITER ;
 
+--//  crear una venta nueva///
+INSERT INTO venta 
+(fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
+VALUES 
+(NOW(), 'Pendiente', 0.00, 1, 1, 1, 2);
+
+SET @id_venta_nueva = LAST_INSERT_ID();
+
+--//2️⃣ Insertar productos en la venta//
+INSERT INTO producto_venta 
+(id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
+VALUES 
+(1, @id_venta_nueva, 5, 10000.00, 1);
+
+INSERT INTO producto_venta 
+(id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
+VALUES 
+(2, @id_venta_nueva, 3, 15000.00, 1);
+
+--//3️⃣ Actualizar cantidad si el producto ya existe--//
+UPDATE producto_venta
+SET cantidad = cantidad + 2
+WHERE id_producto_fk = 1
+  AND id_venta_fk = @id_venta_nueva
+  AND id_moneda_fk = 1;
+
+--//Verificar los registros--//
+
+SELECT * 
+FROM producto_venta
+WHERE id_venta_fk = @id_venta_nueva;
+
+SELECT * 
+FROM venta
+WHERE id_venta = @id_venta_nueva;
+
+--////////////////////////////////////////////////////////////////////////////////////////////--
 -- 3. trg_update_stock_after_insert_venta: Decrementa el stock después de una venta.
 
+-- Primero eliminamos el trigger si existe
 DROP TRIGGER IF EXISTS trg_update_stock_after_insert_venta;
 
 DELIMITER //
+
 CREATE TRIGGER trg_update_stock_after_insert_venta
-AFTER INSERT ON venta_detalle
+AFTER INSERT ON producto_venta
 FOR EACH ROW
 BEGIN
-    -- Lógica para disminuir el stock del producto
+    -- Actualizamos el stock en inventario restando la cantidad vendida
+    UPDATE inventario
+    SET stock = stock - NEW.cantidad
+    WHERE id_producto_fk = NEW.id_producto_fk;
 
+    -- Opcional: prevenir que el stock sea negativo
+    IF (SELECT stock FROM inventario WHERE id_producto_fk = NEW.id_producto_fk) < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Stock insuficiente después de la venta';
+    END IF;
 END //
+
 DELIMITER ;
+
+
+-- Creamos una nueva venta
+INSERT INTO venta 
+(fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
+VALUES 
+(NOW(), 'Pendiente', 0.00, 1, 1, 1, 2);
+
+SET @id_venta_nueva = LAST_INSERT_ID();
+
+-- Insertamos productos en la venta
+INSERT INTO producto_venta 
+(id_producto_fk, id_venta_fk, cantidad, precio_unitario, id_moneda_fk)
+VALUES 
+(1, @id_venta_nueva, 5, 10000.00, 1),
+(2, @id_venta_nueva, 3, 15000.00, 1);
+
+-- Ver stock actualizado
+SELECT * FROM inventario WHERE id_producto_fk IN (1, 2);
+
+-- Ver productos vendidos
+SELECT * FROM producto_venta WHERE id_venta_fk = @id_venta_nueva;
+
+---//////////////////////////////////////////////////////////////////////////////--
 
 -- 4. trg_prevent_delete_categoria_with_products: Impide eliminar una categoría si tiene productos asociados.
 
+-- Eliminamos el trigger si existe
 DROP TRIGGER IF EXISTS trg_prevent_delete_categoria_with_products;
 
 DELIMITER //
+
 CREATE TRIGGER trg_prevent_delete_categoria_with_products
 BEFORE DELETE ON categoria
 FOR EACH ROW
 BEGIN
-    -- Lógica para evitar eliminar categorías con productos
+    DECLARE productos_asociados INT;
 
+    -- Contamos cuántos productos pertenecen a la categoría que se intenta eliminar
+    SELECT COUNT(*) INTO productos_asociados
+    FROM producto
+    WHERE id_categoria_fk = OLD.id_categoria;
+
+    -- Si hay productos asociados, bloqueamos la eliminación
+    IF productos_asociados > 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se puede eliminar la categoría porque tiene productos asociados';
+    END IF;
 END //
+
 DELIMITER ;
+
+-- Ejemplo de categorías
+INSERT INTO categoria (id_categoria, nombre_categoria)
+VALUES (1, 'Electrónica'), (2, 'Ropa');
+
+-- Ejemplo de productos asociados
+INSERT INTO producto (id_producto, nombre_producto, precio, stock, id_categoria_fk)
+VALUES (1, 'Televisor', 50000, 10, 1),
+       (2, 'Camiseta', 20000, 50, 2);
+
+-- Esto fallará porque la categoría 1 tiene un producto asociado
+DELETE FROM categoria WHERE id_categoria = 1;
+--resultado esperado
+
+ERROR 1644 (45000): No se puede eliminar la categoría porque tiene productos asociados
+
+--eliminar una categoria sin productos
+
+-- Primero creamos una categoría sin productos
+INSERT INTO categoria (id_categoria, nombre_categoria) VALUES (3, 'Libros');
+
+-- Ahora la eliminamos
+DELETE FROM categoria WHERE id_categoria = 3;
+
+-- Esto funcionará porque no tiene productos asociados
+
+
+--//////////////////////////////////////////////////////////////////////////////////--
 
 -- 5. trg_log_new_customer_after_insert: Registra cada vez que se crea un nuevo cliente.
 
 DROP TRIGGER IF EXISTS trg_log_new_customer_after_insert;
 
 DELIMITER //
+
 CREATE TRIGGER trg_log_new_customer_after_insert
 AFTER INSERT ON cliente
 FOR EACH ROW
 BEGIN
-    -- Lógica para registrar el nuevo cliente en la auditoría
-
+    INSERT INTO auditoria_cliente (id_cliente_fk, nombre, email, fecha_registro)
+    VALUES (NEW.id_cliente, NEW.nombre, NEW.email, NOW());
 END //
+
 DELIMITER ;
 
+--2️⃣ Insertar un nuevo cliente (para probar el trigger)--
+
+INSERT INTO cliente 
+(nombre, apellido, email, clave, fecha_nacimiento, estado, membresia, puntos)
+VALUES
+('Juan', 'Perez', 'juan.perez@email.com', '12345', '1990-05-15', 'activo', 'oro', 0);
+
+---3️⃣ Verificar que se registró en la auditoría---ç
+
+SELECT * 
+FROM auditoria_cliente
+WHERE id_cliente_fk = LAST_INSERT_ID();
+
+--/////////////////////////////////////////////////////////////////////////////////////////////////////////--
 -- 6. trg_update_total_gastado_cliente: Actualiza el total gastado por cliente después de una compra.
 
 DROP TRIGGER IF EXISTS trg_update_total_gastado_cliente;
 
 DELIMITER //
+
 CREATE TRIGGER trg_update_total_gastado_cliente
 AFTER INSERT ON venta
 FOR EACH ROW
 BEGIN
-    -- Lógica para actualizar total gastado en cliente
-
+    -- Actualiza el total gastado por el cliente sumando el total de la nueva venta
+    UPDATE cliente
+    SET puntos = IFNULL(puntos, 0) + NEW.total
+    WHERE id_cliente = NEW.id_cliente_fk;
 END //
+
 DELIMITER ;
 
--- 7. trg_set_fecha_modificacion_producto: Actualiza la fecha de última modificación de un producto.
+-- 1. Insertar una nueva venta para el cliente 1
+INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
+VALUES (NOW(), 'Pendiente', 50000.00, 1, 1, 1, 2);
 
+-- 2. Revisar el total gastado/puntos del cliente
+SELECT id_cliente, nombre, puntos
+FROM cliente
+WHERE id_cliente = 1;
+
+
+--/////////////////////////////////////////////////////////////////////////////////////////////---
+
+-- 7. trg_set_fecha_modificacion_producto: Actualiza la fecha de última modificación de un producto.
 DROP TRIGGER IF EXISTS trg_set_fecha_modificacion_producto;
 
 DELIMITER //
+
 CREATE TRIGGER trg_set_fecha_modificacion_producto
 BEFORE UPDATE ON producto
 FOR EACH ROW
 BEGIN
-    -- Lógica para establecer la fecha de modificación
-
+    SET NEW.fecha_modificacion = NOW();
 END //
+
 DELIMITER ;
+----/Insertar un nuevo producto---
+INSERT INTO producto (nombre, descripcion, precio, precio_iva, activo, peso, fecha_modificacion)
+VALUES ('Producto A', 'Descripción', 1000, 1210, 1, 1.5, NOW());
+
+---Actualizar cualquier campo--
+UPDATE producto
+SET precio = 1200
+WHERE id_producto = 1;
+----Verificar que la fecha de modificación se haya actualizado--
+SELECT nombre, precio, fecha_modificacion
+FROM producto
+WHERE id_producto = 1;
 
 -- 8. trg_prevent_negative_stock: Impide que el stock de un producto sea negativo.
 
