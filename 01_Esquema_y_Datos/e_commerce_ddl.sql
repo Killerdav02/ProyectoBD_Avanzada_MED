@@ -66,13 +66,16 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`carrito` (
   `id_producto_fk` INT NOT NULL,
   `id_cliente_fk` INT NOT NULL,
   `cantidad` INT NULL DEFAULT NULL,
+  `fecha_creacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `fecha_actualizacion` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  `estado` ENUM('activo', 'abandonado', 'convertido') NOT NULL DEFAULT 'activo',
   PRIMARY KEY (`id_carrito`, `id_producto_fk`),
   INDEX `fk_carrito_producto_idx` (`id_producto_fk` ASC) VISIBLE,
   INDEX `fk_carrito_cliente_idx` (`id_cliente_fk` ASC) VISIBLE,
-  CONSTRAINT `fk_carrito_cliente1`
+  CONSTRAINT `fk_carrito_cliente`
     FOREIGN KEY (`id_cliente_fk`)
     REFERENCES `e_commerce_db`.`cliente` (`id_cliente`),
-  CONSTRAINT `fk_carrito_producto1`
+  CONSTRAINT `fk_carrito_producto`
     FOREIGN KEY (`id_producto_fk`)
     REFERENCES `e_commerce_db`.`producto` (`id_producto`)
 ) ENGINE = InnoDB
@@ -379,7 +382,6 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`venta_eliminada`(
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
-
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
