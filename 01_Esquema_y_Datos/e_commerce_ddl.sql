@@ -389,3 +389,27 @@ COLLATE = utf8mb4_0900_ai_ci;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+-- -----------------------------------------------------
+-- Table `e_commerce_db`.`auditoria_cliente`
+-- -----------------------------------------------------
+CREATE TABLE auditoria_cliente (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente_fk INT NOT NULL,
+    nombre VARCHAR(200),
+    email VARCHAR(200),
+    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
+);
+-- -----------------------------------------------------
+-- Table `e_commerce_db`.`auditoria_cliente`
+-- -----------------------------------------------------
+CREATE TABLE auditoria_precio (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_producto_fk INT NOT NULL,
+    precio_anterior DECIMAL(10,2) NOT NULL,
+    precio_nuevo DECIMAL(10,2) NOT NULL,
+    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
+);
