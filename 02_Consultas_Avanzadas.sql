@@ -1,49 +1,122 @@
 --- 1. qry_TopProductos : Top 10 Productos Más Vendidos: Generar un ranking con los 10 productos que han generado más ingresos.
 
 CREATE OR REPLACE VIEW qry_TopProductos AS
-SELECT ...
-FROM ...
-WHERE ...;
+SELECT 
+    p.id_producto,
+    p.nombre,
+    SUM(pv.cantidad * pv.precio_unitario) AS ingreso_total,
+    SUM(pv.cantidad) AS total_vendido
+FROM producto_venta pv
+JOIN producto p ON pv.id_producto_fk = p.id_producto
+GROUP BY p.id_producto, p.nombre
+ORDER BY ingreso_total DESC
+LIMIT 10;
+
+--Verificar que la vista se creó correctamente:
+
+SHOW FULL TABLES IN e_commerce_db WHERE TABLE_TYPE LIKE 'VIEW';
+
+--Consultar los datos de la vista para ver los resultados:
+
+SELECT * FROM qry_TopProductos;
+
 
 
 --- 2. qry_ProductosBajos : Productos con Bajas Ventas: Identificar los productos en el 10% inferior de ventas para considerar su descontinuación.
 
 CREATE OR REPLACE VIEW qry_ProductosBajos AS
-SELECT ...
-FROM ...
-WHERE ...;
+WITH ranked_products AS (
+    SELECT 
+        p.id_producto,
+        p.nombre,
+        COALESCE(SUM(pv.cantidad), 0) AS total_vendido,
+        ROW_NUMBER() OVER (ORDER BY COALESCE(SUM(pv.cantidad), 0) ASC) AS rn,
+        COUNT(*) OVER () AS total_productos
+    FROM producto p
+    LEFT JOIN producto_venta pv ON p.id_producto = pv.id_producto_fk
+    GROUP BY p.id_producto, p.nombre
+)
+SELECT id_producto, nombre, total_vendido
+FROM ranked_products
+WHERE rn <= total_productos * 0.1;
+
+--Luego, para consultar la vista y ver los productos:--
+
+SELECT * 
+FROM qry_ProductosBajos;
+
 
 
 --- 3. qry_ClientesVIP : Clientes VIP: Listar los 5 clientes con el mayor valor de vida (LTV), basado en su gasto total histórico.
 
+-- Crear o reemplazar la vista
 CREATE OR REPLACE VIEW qry_ClientesVIP AS
-SELECT ...
-FROM ...
-WHERE ...;
+SELECT 
+    c.id_cliente,
+    c.nombre,
+    c.apellido,
+    SUM(v.total) AS total_gastado
+FROM cliente c
+JOIN venta v ON c.id_cliente = v.id_cliente_fk
+GROUP BY c.id_cliente, c.nombre, c.apellido
+ORDER BY total_gastado DESC
+LIMIT 5;
+
+-- Consultar la vista
+SELECT * FROM qry_ClientesVIP;
 
 
 --- 4. qry_VentasMensuales : Análisis de Ventas Mensuales: Mostrar las ventas totales agrupadas por mes y año.
 
+-- Crear o reemplazar la vista
 CREATE OR REPLACE VIEW qry_VentasMensuales AS
-SELECT ...
-FROM ...
-WHERE ...;
+SELECT 
+    YEAR(fecha_venta) AS anio,
+    MONTH(fecha_venta) AS mes,
+    SUM(total) AS total_ventas
+FROM venta
+GROUP BY YEAR(fecha_venta), MONTH(fecha_venta)
+ORDER BY anio, mes;
+
+-- Consultar la vista
+SELECT * FROM qry_VentasMensuales;
 
 
 --- 5. qry_CrecimientoClientes : Crecimiento de Clientes: Calcular el número de nuevos clientes registrados por trimestre.
 
+-- Crear o reemplazar la vista
 CREATE OR REPLACE VIEW qry_CrecimientoClientes AS
-SELECT ...
-FROM ...
-WHERE ...;
+SELECT
+    YEAR(fecha_registro) AS anio,
+    QUARTER(fecha_registro) AS trimestre,
+    COUNT(*) AS nuevos_clientes
+FROM cliente
+GROUP BY YEAR(fecha_registro), QUARTER(fecha_registro)
+ORDER BY anio, trimestre;
+
+-- Consultar la vista
+SELECT * FROM qry_CrecimientoClientes;
 
 
 --- 6. qry_TasaRecompra : Tasa de Compra Repetida: Determinar qué porcentaje de clientes ha realizado más de una compra.
 
+-- Crear o reemplazar la vista
 CREATE OR REPLACE VIEW qry_TasaRecompra AS
-SELECT ...
-FROM ...
-WHERE ...;
+SELECT 
+    ROUND(
+        100 * SUM(CASE WHEN num_compras > 1 THEN 1 ELSE 0 END) / COUNT(*),
+        2
+    ) AS porcentaje_clientes_recompra
+FROM (
+    SELECT 
+        id_cliente_fk, 
+        COUNT(*) AS num_compras
+    FROM venta
+    GROUP BY id_cliente_fk
+) AS subconsulta;
+
+-- Consultar la vista
+SELECT * FROM qry_TasaRecompra;
 
 
 --- 7. qry_ProductosFrecuentes : Productos Comprados Juntos Frecuentemente: Identificar pares de productos que a menudo se compran en la misma transacción.
