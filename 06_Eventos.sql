@@ -253,6 +253,17 @@ DELIMITER ;
 
 -- 15. evt_calculate_monthly_kpis: Calcula KPIs mensuales.
 
+CREATE TABLE KPIs (
+    id_kpi INT AUTO_INCREMENT PRIMARY KEY,
+    mes INT NOT NULL,
+    año INT NOT NULL,
+    total_venta DECIMAL(12,2) DEFAULT 0,
+    cliente_nuevo INT DEFAULT 0,
+    producto_vendido VARCHAR(255),
+    fecha_calculo DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+
 DROP EVENT IF EXISTS evt_calculate_monthly_kpis;
 
 DELIMITER //
@@ -260,9 +271,40 @@ DELIMITER //
 CREATE EVENT evt_calculate_monthly_kpis
 ON SCHEDULE
     EVERY 1 MONTH
+    STARTS '2025-11-01 00:00:00'
 DO
 BEGIN
-    -- Lógica para calcular indicadores clave del mes
+    DECLARE total DECIMAL(12,2);
+    DECLARE nuevos_clientes INT;
+    DECLARE productos VARCHAR(255);
+
+
+    SELECT SUM(total) INTO total
+    FROM venta
+    WHERE MONTH(fecha_venta) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+      AND YEAR(fecha_venta) = YEAR(CURDATE() - INTERVAL 1 MONTH);
+
+
+    SELECT COUNT(*) INTO nuevos_clientes
+    FROM cliente
+    WHERE MONTH(fecha_registro) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+      AND YEAR(fecha_registro) = YEAR(CURDATE() - INTERVAL 1 MONTH);
+
+
+    SELECT GROUP_CONCAT(p.nombre ORDER BY SUM(pv.cantidad)) INTO productos
+    FROM producto_venta pv
+    JOIN producto p ON pv.id_producto_fk = p.id_producto
+    JOIN venta v ON pv.id_venta_fk = v.id_venta
+    WHERE MONTH(v.fecha_venta) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+      AND YEAR(v.fecha_venta) = YEAR(CURDATE() - INTERVAL 1 MONTH)
+    GROUP BY MONTH(v.fecha_venta), YEAR(v.fecha_venta);
+
+    INSERT INTO KPIs (mes, año, total_venta, cliente_nuevo, producto_vendido)
+    VALUES (MONTH(CURDATE() - INTERVAL 1 MONTH),
+            YEAR(CURDATE() - INTERVAL 1 MONTH),
+            total,
+            nuevos_clientes,
+            productos);
 
 END //
 
@@ -278,16 +320,41 @@ DELIMITER //
 CREATE EVENT evt_refresh_materialized_views_nightly
 ON SCHEDULE
     EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP + INTERVAL 1 DAY
 DO
 BEGIN
-    -- Lógica para actualizar vistas materializadas
+    -- Actualizar vistas materializadas (simuladas con tablas)
 
+    -- Refrescar resumen de ventas
+    TRUNCATE TABLE mv_resumen_ventas;
+    INSERT INTO mv_resumen_ventas
+    SELECT * FROM qry_ResumenVentas;  -- o la consulta base que alimenta la vista
+
+    -- Refrescar top productos
+    TRUNCATE TABLE mv_top_productos;
+    INSERT INTO mv_top_productos
+    SELECT * FROM qry_TopProductos;
+
+    -- Refrescar clientes activos
+    TRUNCATE TABLE mv_clientes_activos;
+    INSERT INTO mv_clientes_activos
+    SELECT * FROM qry_ClientesActivos;
 END //
 
 DELIMITER ;
 
 
 -- 17. evt_log_database_size_weekly: Registra el tamaño de la base de datos.
+
+CREATE TABLE IF NOT EXISTS historial_tamano_bd (
+    id_registro INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    nombre_bd VARCHAR(100),
+    tamano_mb DECIMAL(10,2)
+);
+
+SET GLOBAL event_scheduler = ON;
+SHOW VARIABLES LIKE 'event_scheduler';
 
 DROP EVENT IF EXISTS evt_log_database_size_weekly;
 
@@ -296,10 +363,16 @@ DELIMITER //
 CREATE EVENT evt_log_database_size_weekly
 ON SCHEDULE
     EVERY 1 WEEK
+    STARTS CURRENT_TIMESTAMP + INTERVAL 1 WEEK
 DO
 BEGIN
-    -- Lógica para registrar tamaño de la base de datos
-
+    INSERT INTO historial_tamano_bd (nombre_bd, tamano_mb)
+    SELECT
+        table_schema AS nombre_bd,
+        ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS tamano_mb
+    FROM information_schema.tables
+    WHERE table_schema = DATABASE()
+    GROUP BY table_schema;
 END //
 
 DELIMITER ;
@@ -307,23 +380,53 @@ DELIMITER ;
 
 -- 18. evt_detect_fraudulent_activity_hourly: Detecta actividad sospechosa.
 
-DROP EVENT IF EXISTS evt_detect_fraudulent_activity_hourly;
+CREATE TABLE IF NOT EXISTS historial_fraude (
+    id_fraude INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    total_compras INT,
+    fecha_detectado DATETIME DEFAULT CURRENT_TIMESTAMP,
+    motivo TEXT
+);
+
+
+DROP EVENT IF EXISTS evt_detect_fraudulent_activity_daily;
 
 DELIMITER //
 
-CREATE EVENT evt_detect_fraudulent_activity_hourly
+CREATE EVENT evt_detect_fraudulent_activity_daily
 ON SCHEDULE
-    EVERY 1 HOUR
+    EVERY 1 DAY
+    STARTS CURRENT_TIMESTAMP + INTERVAL 1 DAY
 DO
 BEGIN
-    -- Lógica para detectar patrones de fraude
-
+    INSERT INTO historial_fraude (id_cliente, total_compras, motivo)
+    SELECT
+        v.id_cliente_fk,
+        COUNT(*) AS total_compras,
+        'Cliente con más de 3 compras en un mismo día'
+    FROM venta v
+    WHERE DATE(v.fecha_venta) = CURDATE() - INTERVAL 1 DAY
+    GROUP BY v.id_cliente_fk
+    HAVING COUNT(*) > 3;
 END //
 
 DELIMITER ;
 
 
+
 -- 19. evt_generate_supplier_performance_report_monthly: Genera reporte de proveedores.
+
+CREATE TABLE IF NOT EXISTS reporte_proveedores (
+    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
+    id_proveedor INT,
+    mes INT,
+    anio INT,
+    total_productos_entregados INT,
+    total_ventas DECIMAL(12,2),
+    promedio_precio DECIMAL(12,2),
+    fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 
 DROP EVENT IF EXISTS evt_generate_supplier_performance_report_monthly;
 
@@ -332,28 +435,45 @@ DELIMITER //
 CREATE EVENT evt_generate_supplier_performance_report_monthly
 ON SCHEDULE
     EVERY 1 MONTH
+    STARTS CURRENT_TIMESTAMP + INTERVAL 1 MONTH
 DO
 BEGIN
-    -- Lógica para evaluar desempeño de proveedores
-
+    INSERT INTO reporte_proveedores (id_proveedor, mes, anio, total_productos_entregados, total_ventas, promedio_precio)
+    SELECT
+        p.id_proveedor_fk,
+        MONTH(CURDATE() - INTERVAL 1 MONTH),
+        YEAR(CURDATE() - INTERVAL 1 MONTH),
+        COUNT(pr.id_producto) AS total_productos_entregados,
+        SUM(v.total) AS total_ventas,
+        ROUND(AVG(pr.precio), 2) AS promedio_precio
+    FROM producto pr
+    JOIN proveedor p ON pr.id_proveedor_fk = p.id_proveedor
+    JOIN producto_venta pv ON pv.id_producto_fk = pr.id_producto
+    JOIN venta v ON v.id_venta = pv.id_venta_fk
+    WHERE MONTH(v.fecha_venta) = MONTH(CURDATE() - INTERVAL 1 MONTH)
+      AND YEAR(v.fecha_venta) = YEAR(CURDATE() - INTERVAL 1 MONTH)
+    GROUP BY p.id_proveedor_fk;
 END //
 
 DELIMITER ;
+
 
 
 -- 20. evt_purge_soft_deleted_records_weekly: Elimina registros marcados como borrados.
 
-DROP EVENT IF EXISTS evt_purge_soft_deleted_records_weekly;
+DROP EVENT IF EXISTS evt_purge_old_deleted_sales;
 
 DELIMITER //
 
-CREATE EVENT evt_purge_soft_deleted_records_weekly
+CREATE EVENT evt_purge_old_deleted_sales
 ON SCHEDULE
     EVERY 1 WEEK
+    STARTS CURRENT_TIMESTAMP + INTERVAL 1 WEEK
 DO
 BEGIN
-    -- Lógica para purgar registros eliminados lógicamente
-
+    DELETE FROM venta_eliminada
+    WHERE fecha_eliminacion < (CURDATE() - INTERVAL 6 MONTH);
 END //
 
 DELIMITER ;
+

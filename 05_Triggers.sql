@@ -289,17 +289,29 @@ VALUES ("carlos", "lopez","carloslopez@hotmail.com","1234567",NOW(),"2025-04-25"
 
 -- 18. trg_log_permission_changes: Audita los cambios de permisos en los usuarios.
 
+-- 18. trg_log_permission_changes: Audita los cambios de permisos en los usuarios.
+
 DROP TRIGGER IF EXISTS trg_log_permission_changes;
 
 DELIMITER //
+
 CREATE TRIGGER trg_log_permission_changes
 AFTER UPDATE ON permisos
 FOR EACH ROW
 BEGIN
-    -- Lógica para registrar cambios en permisos
+
+    INSERT INTO log_cambios_permisos(usuario, permiso_anterior, permiso_nuevo, fecha)
+    VALUES (
+        NEW.usuario,
+        OLD.permiso,
+        NEW.permiso,
+        NOW()
+    );
 
 END //
+
 DELIMITER ;
+
 
 -- 19. trg_assign_default_category_on_null: Asigna una categoría por defecto si no se especifica ninguna.
 
