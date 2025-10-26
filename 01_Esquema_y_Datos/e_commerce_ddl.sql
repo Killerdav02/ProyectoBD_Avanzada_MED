@@ -500,3 +500,70 @@ CREATE TABLE IF NOT EXISTS ranking_productos (
         ON DELETE CASCADE,
     INDEX idx_total_vendido (total_vendido DESC)
 );
+
+CREATE TABLE IF NOT EXISTS reseña_producto (
+    id_reseña INT NOT NULL AUTO_INCREMENT,
+    id_cliente_fk INT NOT NULL,
+    id_producto_fk INT NOT NULL,
+    calificacion INT NOT NULL,
+    comentario TEXT NULL,
+    fecha_reseña DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_reseña),
+    INDEX idx_cliente (id_cliente_fk),
+    INDEX idx_producto (id_producto_fk),
+    CONSTRAINT fk_reseña_cliente
+        FOREIGN KEY (id_cliente_fk)
+        REFERENCES cliente(id_cliente)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_reseña_producto
+        FOREIGN KEY (id_producto_fk)
+        REFERENCES producto(id_producto)
+        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS reporte_proveedores (
+    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
+    id_proveedor INT,
+    mes INT,
+    anio INT,
+    total_productos_entregados INT,
+    total_ventas DECIMAL(12,2),
+    promedio_precio DECIMAL(12,2),
+    fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS historial_fraude (
+    id_fraude INT AUTO_INCREMENT PRIMARY KEY,
+    id_cliente INT,
+    total_compras INT,
+    fecha_detectado DATETIME DEFAULT CURRENT_TIMESTAMP,
+    motivo TEXT
+);
+
+CREATE TABLE IF NOT EXISTS historial_tamano_bd (
+    id_registro INT AUTO_INCREMENT PRIMARY KEY,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    nombre_bd VARCHAR(100),
+    tamano_mb DECIMAL(10,2)
+);
+
+CREATE TABLE KPIs (
+    id_kpi INT AUTO_INCREMENT PRIMARY KEY,
+    mes INT NOT NULL,
+    año INT NOT NULL,
+    total_venta DECIMAL(12,2) DEFAULT 0,
+    cliente_nuevo INT DEFAULT 0,
+    producto_vendido VARCHAR(255),
+    fecha_calculo DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS producto_visita (
+    id_producto_fk INT NOT NULL,
+    cantidad_visitas INT NOT NULL DEFAULT 0,
+    fecha_visita DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_producto_fk, fecha_visita),
+    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
+);
+
