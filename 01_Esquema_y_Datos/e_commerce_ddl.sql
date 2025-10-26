@@ -390,65 +390,6 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-
-
-CREATE TABLE auditoria_cliente (
-    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
-    id_cliente_fk INT NOT NULL,
-    nombre VARCHAR(200),
-    email VARCHAR(200),
-    fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
-);
-
-CREATE TABLE auditoria_precio (
-    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
-    id_producto_fk INT NOT NULL,
-    precio_anterior DECIMAL(10,2) NOT NULL,
-    precio_nuevo DECIMAL(10,2) NOT NULL,
-    fecha_cambio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
-);
-
-
-CREATE TABLE IF NOT EXISTS reporte_ventas_semanal (
-    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
-    fecha_reporte DATETIME NOT NULL,
-    total_ventas DECIMAL(12,2) NOT NULL,
-    total_productos INT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS lista_reabastecimiento (
-    id_lista INT AUTO_INCREMENT PRIMARY KEY,
-    id_producto_fk INT NOT NULL,
-    nombre_producto VARCHAR(150) NOT NULL,
-    stock_actual INT NOT NULL,
-    stock_minimo INT NOT NULL,
-    cantidad_sugerida INT NOT NULL,
-    fecha_generacion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM('pendiente', 'procesado', 'cancelado') DEFAULT 'pendiente',
-    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto),
-    INDEX idx_fecha_estado (fecha_generacion, estado)
-) ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci;
-
-
-CREATE TABLE IF NOT EXISTS log_mantenimiento_indices (
-    id_log INT AUTO_INCREMENT PRIMARY KEY,
-    tabla_nombre VARCHAR(100) NOT NULL,
-    accion VARCHAR(50) NOT NULL,
-    fecha_ejecucion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM('exitoso', 'fallido') DEFAULT 'exitoso',
-    mensaje TEXT,
-    INDEX idx_fecha (fecha_ejecucion)
-) ENGINE = InnoDB
-DEFAULT CHARACTER SET = utf8mb4
-COLLATE = utf8mb4_0900_ai_ci;
-
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_estado_venta` (
     `id_auditoria_estado_venta` INT AUTO_INCREMENT PRIMARY KEY,
     `id_venta_fk` INT NOT NULL,
@@ -465,105 +406,220 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_estado_venta` (
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS resumen_ventas_diarias (
-    fecha DATE NOT NULL,
-    total_ventas DECIMAL(12,2) NOT NULL,
-    total_productos_vendidos INT NOT NULL,
-    PRIMARY KEY (fecha)
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_cliente` (
+  `id_auditoria` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_cliente_fk` INT NOT NULL,
+  `nombre` VARCHAR(200),
+  `email` VARCHAR(200),
+  `fecha_registro` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_auditoria_cliente`
+    FOREIGN KEY (`id_cliente_fk`)
+    REFERENCES `e_commerce_db`.`cliente` (`id_cliente`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS auditoria_consistencia_datos (
-    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
-    tabla VARCHAR(100) NOT NULL,
-    error VARCHAR(100) NOT NULL,
-    descripcion TEXT NOT NULL,
-    fecha DATETIME NOT NULL
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_precio` (
+  `id_auditoria` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_producto_fk` INT NOT NULL,
+  `precio_anterior` DECIMAL(10,2) NOT NULL,
+  `precio_nuevo` DECIMAL(10,2) NOT NULL,
+  `fecha_cambio` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT `fk_auditoria_precio_producto`
+    FOREIGN KEY (`id_producto_fk`)
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS cupones_cumpleanos (
-    id_cupón INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    id_cliente_fk INT NOT NULL,
-    codigo_cupon VARCHAR(50) NOT NULL,
-    fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    estado ENUM('enviado', 'usado') DEFAULT 'enviado',
-    descuento DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`reporte_ventas_semanal` (
+  `id_reporte` INT AUTO_INCREMENT PRIMARY KEY,
+  `fecha_reporte` DATETIME NOT NULL,
+  `total_ventas` DECIMAL(12,2) NOT NULL,
+  `total_productos` INT NOT NULL
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS ranking_productos (
-    id_producto_fk INT NOT NULL,
-    total_vendido DECIMAL(12,2) NOT NULL DEFAULT 0,
-    total_cantidad INT NOT NULL DEFAULT 0,
-    PRIMARY KEY (id_producto_fk),
-    CONSTRAINT fk_ranking_producto FOREIGN KEY (id_producto_fk)
-        REFERENCES producto (id_producto)
-        ON DELETE CASCADE,
-    INDEX idx_total_vendido (total_vendido DESC)
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`lista_reabastecimiento` (
+  `id_lista` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_producto_fk` INT NOT NULL,
+  `nombre_producto` VARCHAR(150) NOT NULL,
+  `stock_actual` INT NOT NULL,
+  `stock_minimo` INT NOT NULL,
+  `cantidad_sugerida` INT NOT NULL,
+  `fecha_generacion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `estado` ENUM('pendiente', 'procesado', 'cancelado') DEFAULT 'pendiente',
+  INDEX `idx_fecha_estado` (`fecha_generacion`, `estado`),
+  CONSTRAINT `fk_reabastecimiento_producto`
+    FOREIGN KEY (`id_producto_fk`)
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS reseña_producto (
-    id_reseña INT NOT NULL AUTO_INCREMENT,
-    id_cliente_fk INT NOT NULL,
-    id_producto_fk INT NOT NULL,
-    calificacion INT NOT NULL,
-    comentario TEXT NULL,
-    fecha_reseña DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id_reseña),
-    INDEX idx_cliente (id_cliente_fk),
-    INDEX idx_producto (id_producto_fk),
-    CONSTRAINT fk_reseña_cliente
-        FOREIGN KEY (id_cliente_fk)
-        REFERENCES cliente(id_cliente)
-        ON DELETE CASCADE,
-    CONSTRAINT fk_reseña_producto
-        FOREIGN KEY (id_producto_fk)
-        REFERENCES producto(id_producto)
-        ON DELETE CASCADE
-) ENGINE=InnoDB
-  DEFAULT CHARSET=utf8mb4
-  COLLATE=utf8mb4_0900_ai_ci;
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`log_mantenimiento_indices` (
+  `id_log` INT AUTO_INCREMENT PRIMARY KEY,
+  `tabla_nombre` VARCHAR(100) NOT NULL,
+  `accion` VARCHAR(50) NOT NULL,
+  `fecha_ejecucion` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `estado` ENUM('exitoso', 'fallido') DEFAULT 'exitoso',
+  `mensaje` TEXT,
+  INDEX `idx_fecha` (`fecha_ejecucion`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS reporte_proveedores (
-    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
-    id_proveedor INT,
-    mes INT,
-    anio INT,
-    total_productos_entregados INT,
-    total_ventas DECIMAL(12,2),
-    promedio_precio DECIMAL(12,2),
-    fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`resumen_ventas_diarias` (
+  `fecha` DATE NOT NULL,
+  `total_ventas` DECIMAL(12,2) NOT NULL,
+  `total_productos_vendidos` INT NOT NULL,
+  PRIMARY KEY (`fecha`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS historial_fraude (
-    id_fraude INT AUTO_INCREMENT PRIMARY KEY,
-    id_cliente INT,
-    total_compras INT,
-    fecha_detectado DATETIME DEFAULT CURRENT_TIMESTAMP,
-    motivo TEXT
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_consistencia_datos` (
+  `id_auditoria` INT AUTO_INCREMENT PRIMARY KEY,
+  `tabla` VARCHAR(100) NOT NULL,
+  `error` VARCHAR(100) NOT NULL,
+  `descripcion` TEXT NOT NULL,
+  `fecha` DATETIME NOT NULL
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS historial_tamano_bd (
-    id_registro INT AUTO_INCREMENT PRIMARY KEY,
-    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
-    nombre_bd VARCHAR(100),
-    tamano_mb DECIMAL(10,2)
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`cupones_cumpleanos` (
+  `id_cupón` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id_cliente_fk` INT NOT NULL,
+  `codigo_cupon` VARCHAR(50) NOT NULL,
+  `fecha_envio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `estado` ENUM('enviado', 'usado') DEFAULT 'enviado',
+  `descuento` DECIMAL(10,2) NOT NULL,
+  CONSTRAINT `fk_cupon_cliente`
+    FOREIGN KEY (`id_cliente_fk`)
+    REFERENCES `e_commerce_db`.`cliente` (`id_cliente`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE KPIs (
-    id_kpi INT AUTO_INCREMENT PRIMARY KEY,
-    mes INT NOT NULL,
-    año INT NOT NULL,
-    total_venta DECIMAL(12,2) DEFAULT 0,
-    cliente_nuevo INT DEFAULT 0,
-    producto_vendido VARCHAR(255),
-    fecha_calculo DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`ranking_productos` (
+  `id_producto_fk` INT NOT NULL,
+  `total_vendido` DECIMAL(12,2) NOT NULL DEFAULT 0,
+  `total_cantidad` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id_producto_fk`),
+  INDEX `idx_total_vendido` (`total_vendido` DESC),
+  CONSTRAINT `fk_ranking_producto`
+    FOREIGN KEY (`id_producto_fk`)
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+    ON DELETE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
 
-CREATE TABLE IF NOT EXISTS producto_visita (
-    id_producto_fk INT NOT NULL,
-    cantidad_visitas INT NOT NULL DEFAULT 0,
-    fecha_visita DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (id_producto_fk, fecha_visita),
-    FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
-);
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`reseña_producto` (
+  `id_reseña` INT NOT NULL AUTO_INCREMENT,
+  `id_cliente_fk` INT NOT NULL,
+  `id_producto_fk` INT NOT NULL,
+  `calificacion` INT NOT NULL,
+  `comentario` TEXT NULL,
+  `fecha_reseña` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_reseña`),
+  INDEX `idx_cliente` (`id_cliente_fk`),
+  INDEX `idx_producto` (`id_producto_fk`),
+  CONSTRAINT `fk_reseña_cliente`
+    FOREIGN KEY (`id_cliente_fk`)
+    REFERENCES `e_commerce_db`.`cliente` (`id_cliente`)
+    ON DELETE CASCADE,
+  CONSTRAINT `fk_reseña_producto`
+    FOREIGN KEY (`id_producto_fk`)
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+    ON DELETE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`reporte_proveedores` (
+  `id_reporte` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_proveedor` INT,
+  `mes` INT,
+  `anio` INT,
+  `total_productos_entregados` INT,
+  `total_ventas` DECIMAL(12,2),
+  `promedio_precio` DECIMAL(12,2),
+  `fecha_generacion` DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`historial_fraude` (
+  `id_fraude` INT AUTO_INCREMENT PRIMARY KEY,
+  `id_cliente` INT,
+  `total_compras` INT,
+  `fecha_detectado` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `motivo` TEXT,
+  CONSTRAINT `fk_historial_fraude_cliente`
+    FOREIGN KEY (`id_cliente`)
+    REFERENCES `e_commerce_db`.`cliente` (`id_cliente`)
+    ON DELETE SET NULL
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`historial_tamano_bd` (
+  `id_registro` INT AUTO_INCREMENT PRIMARY KEY,
+  `fecha_registro` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `nombre_bd` VARCHAR(100),
+  `tamano_mb` DECIMAL(10,2)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`KPIs` (
+  `id_kpi` INT AUTO_INCREMENT PRIMARY KEY,
+  `mes` INT NOT NULL,
+  `año` INT NOT NULL,
+  `total_venta` DECIMAL(12,2) DEFAULT 0,
+  `cliente_nuevo` INT DEFAULT 0,
+  `producto_vendido` VARCHAR(255),
+  `fecha_calculo` DATETIME DEFAULT CURRENT_TIMESTAMP
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`producto_visita` (
+  `id_producto_fk` INT NOT NULL,
+  `cantidad_visitas` INT NOT NULL DEFAULT 0,
+  `fecha_visita` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_producto_fk`, `fecha_visita`),
+  CONSTRAINT `fk_visita_producto`
+    FOREIGN KEY (`id_producto_fk`)
+    REFERENCES `e_commerce_db`.`producto` (`id_producto`)
+    ON DELETE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+
+
+
 
