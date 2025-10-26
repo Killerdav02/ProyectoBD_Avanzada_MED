@@ -281,7 +281,7 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`venta` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
-ALTER TABLE descuento 
+ALTER TABLE descuento
 ADD COLUMN activo TINYINT DEFAULT 1 AFTER nombre;
 
 
@@ -395,9 +395,6 @@ SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 
--- -----------------------------------------------------
--- Table `e_commerce_db`.`auditoria_cliente`
--- -----------------------------------------------------
 CREATE TABLE auditoria_cliente (
     id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente_fk INT NOT NULL,
@@ -406,9 +403,7 @@ CREATE TABLE auditoria_cliente (
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
 );
--- -----------------------------------------------------
--- Table `e_commerce_db`.`auditoria_cliente`
--- -----------------------------------------------------
+
 CREATE TABLE auditoria_precio (
     id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
     id_producto_fk INT NOT NULL,
@@ -418,9 +413,7 @@ CREATE TABLE auditoria_precio (
     FOREIGN KEY (id_producto_fk) REFERENCES producto(id_producto)
 );
 
---- ================================================
--- 1. Crear tabla para reporte de ventas semanal
--- ================================================
+
 CREATE TABLE IF NOT EXISTS reporte_ventas_semanal (
     id_reporte INT AUTO_INCREMENT PRIMARY KEY,
     fecha_reporte DATETIME NOT NULL,
@@ -489,11 +482,11 @@ CREATE TABLE IF NOT EXISTS auditoria_consistencia_datos (
 
 CREATE TABLE IF NOT EXISTS cupones_cumpleanos (
     id_cupón INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    id_cliente_fk INT NOT NULL,                        -- Cliente que recibe el cupón
-    codigo_cupon VARCHAR(50) NOT NULL,                  -- Código único del cupón
-    fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Fecha de envío del cupón
-    estado ENUM('enviado', 'usado') DEFAULT 'enviado',  -- Estado del cupón (activo o usado)
-    descuento DECIMAL(10,2) NOT NULL,                   -- Valor del descuento
+    id_cliente_fk INT NOT NULL,
+    codigo_cupon VARCHAR(50) NOT NULL,
+    fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado ENUM('enviado', 'usado') DEFAULT 'enviado',
+    descuento DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
 );
 

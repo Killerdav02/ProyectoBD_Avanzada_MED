@@ -362,12 +362,12 @@ END$$
 DELIMITER ;
 
 -- como probar
-SELECT * 
+SELECT *
 FROM producto_venta
 WHERE id_venta_fk = 1;
 
 UPDATE producto_venta
-SET cantidad = 5 
+SET cantidad = 5
 WHERE id_venta_fk = 1 AND id_producto_fk = 1;
 
 SELECT recalcular_total_venta(1) AS nuevo_total;
@@ -404,19 +404,19 @@ END$$
 DELIMITER ;
 
 --- como usarlo:
-SELECT id_venta, estado, id_cliente_fk, total 
-FROM venta 
+SELECT id_venta, estado, id_cliente_fk, total
+FROM venta
 LIMIT 5;
 
-UPDATE venta 
-SET estado = 'Procesando' 
+UPDATE venta
+SET estado = 'Procesando'
 WHERE id_venta = 1;
 
-UPDATE venta 
-SET estado = 'Enviado' 
+UPDATE venta
+SET estado = 'Enviado'
 WHERE id_venta = 1;
 
-SELECT 
+SELECT
     a.id_auditoria_estado_venta,
     a.id_venta_fk,
     a.estado_anterior,
@@ -445,7 +445,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Error: El precio del producto no puede ser cero o negativo';
     END IF;
-    
+
     -- Validar que el precio con IVA no sea cero o negativo
     IF NEW.precio_iva IS NOT NULL AND NEW.precio_iva <= 0 THEN
         SIGNAL SQLSTATE '45000'
@@ -469,7 +469,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Error: El precio del producto no puede ser cero o negativo';
     END IF;
-    
+
     -- Validar que el precio con IVA no sea cero o negativo
     IF NEW.precio_iva IS NOT NULL AND NEW.precio_iva <= 0 THEN
         SIGNAL SQLSTATE '45000'
@@ -480,18 +480,18 @@ END$$
 DELIMITER ;
 
 --- como usarlo:
-INSERT INTO `e_commerce_db`.`producto` 
+INSERT INTO `e_commerce_db`.`producto`
     (nombre, descripcion, precio, activo, peso)
 VALUES
     ('Producto de prueba', 'Descripción de prueba', 100.00, 1, 0.5);
-    
-INSERT INTO `e_commerce_db`.`producto` 
+
+INSERT INTO `e_commerce_db`.`producto`
     (nombre, descripcion, precio, activo, peso)
 VALUES
     ('Producto de prueba 2', 'Descripción de prueba', 0.00, 1, 0.5);
-    
-UPDATE `e_commerce_db`.`producto` 
-SET precio = 0.00 
+
+UPDATE `e_commerce_db`.`producto`
+SET precio = 0.00
 WHERE id_producto = 1;
 
 -- 13. trg_send_stock_alert_on_low_stock: Crea una alerta cuando el stock baja de un umbral.
@@ -505,15 +505,15 @@ AFTER UPDATE ON `e_commerce_db`.`inventario`
 FOR EACH ROW
 BEGIN
     DECLARE umbral INT DEFAULT 10;
-    
+
     -- Solo actuar si el stock disminuyó
     IF NEW.stock < OLD.stock AND NEW.stock <= umbral THEN
-        
+
         -- Insertar alerta solo si no existe una alerta pendiente para este inventario
         IF NOT EXISTS (
-            SELECT 1 
-            FROM alerta_stock 
-            WHERE id_inventario_fk = NEW.id_inventario 
+            SELECT 1
+            FROM alerta_stock
+            WHERE id_inventario_fk = NEW.id_inventario
             7-13AND estado = 'pendiente'
         ) THEN
             INSERT INTO `e_commerce_db`.`alerta_stock` (
@@ -536,7 +536,7 @@ END$$
 
 DELIMITER ;
 
-SELECT 
+SELECT
     i.id_inventario,
     i.id_producto_fk,
     p.nombre,
@@ -548,12 +548,12 @@ WHERE i.stock > 10
 LIMIT 5;
 
 --Como usar, reducir stock:
-UPDATE inventario 
-SET stock = 5 
+UPDATE inventario
+SET stock = 5
 WHERE id_inventario = 1;
 
 -- Ver las alertas generadas
-SELECT 
+SELECT
     a.id_alerta_stock,
     p.nombre AS nombre_producto,
     i.sku,
@@ -670,9 +670,6 @@ INSERT INTO
         id_referido
     )
 VALUES ("carlos", "lopez","carloslopez@hotmail.com","1234567",NOW(),"2025-04-25",20);
-
-
--- 18. trg_log_permission_changes: Audita los cambios de permisos en los usuarios.
 
 -- 18. trg_log_permission_changes: Audita los cambios de permisos en los usuarios.
 
