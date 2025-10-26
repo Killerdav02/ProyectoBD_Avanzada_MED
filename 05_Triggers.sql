@@ -514,7 +514,7 @@ BEGIN
             SELECT 1 
             FROM alerta_stock 
             WHERE id_inventario_fk = NEW.id_inventario 
-              AND estado = 'pendiente'
+            7-13AND estado = 'pendiente'
         ) THEN
             INSERT INTO `e_commerce_db`.`alerta_stock` (
                 id_inventario_fk,
