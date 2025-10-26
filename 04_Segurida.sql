@@ -158,14 +158,175 @@ SET DEFAULT ROLE 'Administrador_Sistema' TO 'admin_user'@'localhost';
 SHOW GRANTS FOR 'admin_user'@'localhost';
 
 --- 8. Crear un usuario marketing_user y asignarle el rol de marketing.
+CREATE USER 'marketing_user'@'localhost' IDENTIFIED BY 'MarketingPass123!';
+
+CREATE ROLE 'rol_marketing';
+
+GRANT 'rol_marketing' TO 'marketing_user';--- asignar rol
+SET DEFAULT ROLE 'rol_marketing' TO 'marketing_user';
+
+FLUSH PRIVILEGES;
+
+SHOW GRANTS FOR 'marketing_user'@'localhost';
+
+
+
+
+
 --- 9. Crear un usuario inventory_user y asignarle el rol de inventario.
+
+CREATE ROLE IF NOT EXISTS 'rol_inventario';
+
+-- Asignar permisos al rol de inventario
+GRANT SELECT, INSERT, UPDATE ON `e_commerce_db`.`inventario` TO 'rol_inventario';
+GRANT SELECT, INSERT, UPDATE ON `e_commerce_db`.`producto` TO 'rol_inventario';
+GRANT SELECT, INSERT, UPDATE ON `e_commerce_db`.`alerta_stock` TO 'rol_inventario';
+GRANT SELECT ON `e_commerce_db`.`producto_categoria` TO 'rol_inventario';
+GRANT SELECT ON `e_commerce_db`.`categoria` TO 'rol_inventario';
+GRANT SELECT ON `e_commerce_db`.`proveedor` TO 'rol_inventario';
+GRANT SELECT ON `e_commerce_db`.`proveedor_tienda_producto` TO 'rol_inventario';
+
+-- Crear usuario inventory_user
+CREATE USER IF NOT EXISTS 'inventory_user'@'localhost' IDENTIFIED BY 'Inventory2025!';
+
+-- Asignar el rol al usuario
+GRANT 'rol_inventario' TO 'inventory_user'@'localhost';
+
+-- Establecer el rol como activo por defecto
+SET DEFAULT ROLE 'rol_inventario' TO 'inventory_user'@'localhost';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+
+-- Ver permisos del usuario
+SHOW GRANTS FOR 'inventory_user'@'localhost';
+
+-- Ver permisos del rol
+SHOW GRANTS FOR 'rol_inventario';
+
 --- 10. Crear un usuario support_user y asignarle el rol de atención al cliente.
+
+-- Crear usuario y rol de atención al cliente
+CREATE USER 'support_user'@'localhost' IDENTIFIED BY 'SupportPass123!';
+
+-- Crear rol para atención al cliente
+CREATE ROLE 'rol_soporte';
+
+-- Conceder permisos adecuados
+-- El personal de soporte puede consultar clientes, ventas y carritos,
+-- pero no modificar productos ni información sensible del sistema.
+GRANT SELECT, UPDATE ON e_commerce_db.cliente TO 'rol_soporte';
+GRANT SELECT ON e_commerce_db.venta TO 'rol_soporte';
+GRANT SELECT ON e_commerce_db.carrito TO 'rol_soporte';
+GRANT SELECT ON e_commerce_db.producto TO 'rol_soporte';
+
+-- Asignar rol al usuario
+GRANT 'rol_soporte' TO 'support_user';
+SET DEFAULT ROLE 'rol_soporte' TO 'support_user';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+
+-- Verificar permisos
+SHOW GRANTS FOR 'support_user'@'localhost';
+
 --- 11. Impedir que el rol Analista_Datos pueda ejecutar comandos DELETE o TRUNCATE.
+
+-- Crear el rol Analista_Datos
+CREATE ROLE 'rol_analista_datos';
+
+-- Otorgar permisos de solo lectura
+GRANT SELECT, SHOW VIEW ON e_commerce_db.* TO 'rol_analista_datos';
+
+-- Revocar permisos que podrían permitir eliminar o alterar datos
+REVOKE DELETE, DROP ON e_commerce_db.* FROM 'rol_analista_datos';
+
+-- Crear usuario analista de datos
+CREATE USER 'data_analyst'@'localhost' IDENTIFIED BY 'AnalystPass123!';
+
+-- Asignar el rol al usuario
+GRANT 'rol_analista_datos' TO 'data_analyst';
+SET DEFAULT ROLE 'rol_analista_datos' TO 'data_analyst';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+
+-- Verificar permisos del usuario
+SHOW GRANTS FOR 'data_analyst'@'localhost';
+
 --- 12. Otorgar al rol Gerente_Marketing permiso para ejecutar procedimientos almacenados de reportes de marketing.
+
+-- Crear el rol si no existe
+CREATE ROLE IF NOT EXISTS 'rol_gerente_marketing';
+
+-- Otorgar permisos de lectura y ejecución de reportes
+GRANT SELECT, SHOW VIEW ON e_commerce_db.* TO 'rol_gerente_marketing';
+GRANT EXECUTE ON PROCEDURE e_commerce_db.sp_GenerarReporteMensualVentas TO 'rol_gerente_marketing';
+
+-- Crear el usuario con host explícito
+CREATE USER IF NOT EXISTS 'marketing_manager'@'localhost' IDENTIFIED BY 'Marketing123!';
+
+-- Asignar el rol al usuario
+GRANT 'rol_gerente_marketing' TO 'marketing_manager'@'localhost';
+
+-- Establecer el rol como predeterminado
+SET DEFAULT ROLE 'rol_gerente_marketing' TO 'marketing_manager'@'localhost';
+
+-- Aplicar cambios
+FLUSH PRIVILEGES;
+
+-- Verificar permisos
+SHOW GRANTS FOR 'marketing_manager'@'localhost';
+
+
 --- 13. Crear una vista v_info_clientes_basica que oculte información sensible y dar acceso a ella al rol Atencion_Cliente.
+
+--  Crear la vista que oculte datos sensibles
+CREATE OR REPLACE VIEW v_info_clientes_basica AS
+SELECT
+    id_cliente,
+    CONCAT(nombre, ' ', apellido) AS nombre_completo,
+    estado,
+    fecha_registro,
+    membresia,
+    puntos
+FROM cliente;
+
+-- Crear el rol (si no existe)
+CREATE ROLE IF NOT EXISTS 'rol_atencion_cliente';
+
+--  Otorgar permisos de lectura sobre la vista
+GRANT SELECT ON v_info_clientes_basica TO 'rol_atencion_cliente';
+
+-- Crear el usuario de atención al cliente
+CREATE USER IF NOT EXISTS 'support_user'@'localhost' IDENTIFIED BY 'Support123!';
+
+-- Asignar el rol al usuario
+GRANT 'rol_atencion_cliente' TO 'support_user'@'localhost';
+SET DEFAULT ROLE 'rol_atencion_cliente' TO 'support_user'@'localhost';
+
+-- Aplicar los cambios
+FLUSH PRIVILEGES;
+
+-- Verificar los permisos del rol o usuario
+SHOW GRANTS FOR 'support_user'@'localhost';
+
+
 -- 14. Revocar el permiso de UPDATE sobre la columna precio de la tabla productos al rol Empleado_Inventario.
 
-REVOKE UPDATE (precio) ON producto FROM 'Empleado_Inventario';
+-- 1. Revocar el UPDATE general que acabas de otorgar
+REVOKE UPDATE ON `e_commerce_db`.`producto` FROM 'Empleado_Inventario';
+
+-- 2. Otorgar UPDATE solo en las columnas específicas (SIN precio)
+GRANT UPDATE (nombre, descripcion, precio_iva, activo, peso) 
+ON `e_commerce_db`.`producto` 
+TO 'Empleado_Inventario';
+
+-- 3. Aplicar cambios
+FLUSH PRIVILEGES;
+
+-- 4. Verificar permisos
+SHOW GRANTS FOR 'Empleado_Inventario';
 
 -- 15. Implementar una política de contraseñas seguras para todos los usuarios.
 
