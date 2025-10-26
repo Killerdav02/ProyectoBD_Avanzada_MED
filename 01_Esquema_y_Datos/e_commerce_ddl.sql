@@ -140,7 +140,7 @@ COLLATE = utf8mb4_0900_ai_ci;
 
 
 -- -----------------------------------------------------
--- Table `e_commerce_db`.`descuento`
+-- Table `descuento`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`descuento` (
   `id_descuento` INT NOT NULL AUTO_INCREMENT,
@@ -471,3 +471,39 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_estado_venta` (
 ) ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS resumen_ventas_diarias (
+    fecha DATE NOT NULL,
+    total_ventas DECIMAL(12,2) NOT NULL,
+    total_productos_vendidos INT NOT NULL,
+    PRIMARY KEY (fecha)
+);
+
+CREATE TABLE IF NOT EXISTS auditoria_consistencia_datos (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    tabla VARCHAR(100) NOT NULL,
+    error VARCHAR(100) NOT NULL,
+    descripcion TEXT NOT NULL,
+    fecha DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cupones_cumpleanos (
+    id_cupón INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    id_cliente_fk INT NOT NULL,                        -- Cliente que recibe el cupón
+    codigo_cupon VARCHAR(50) NOT NULL,                  -- Código único del cupón
+    fecha_envio DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Fecha de envío del cupón
+    estado ENUM('enviado', 'usado') DEFAULT 'enviado',  -- Estado del cupón (activo o usado)
+    descuento DECIMAL(10,2) NOT NULL,                   -- Valor del descuento
+    FOREIGN KEY (id_cliente_fk) REFERENCES cliente(id_cliente)
+);
+
+CREATE TABLE IF NOT EXISTS ranking_productos (
+    id_producto_fk INT NOT NULL,
+    total_vendido DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_cantidad INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_producto_fk),
+    CONSTRAINT fk_ranking_producto FOREIGN KEY (id_producto_fk)
+        REFERENCES producto (id_producto)
+        ON DELETE CASCADE,
+    INDEX idx_total_vendido (total_vendido DESC)
+);
