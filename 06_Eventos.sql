@@ -842,128 +842,289 @@ DELIMITER ;
 
 -- 8. evt_suspend_inactive_accounts_quarterly: Desactiva cuentas sin actividad.
 
-DROP EVENT IF EXISTS evt_suspend_inactive_accounts_quarterly;
-
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_suspend_inactive_accounts_quarterly
-ON SCHEDULE
-    EVERY 3 MONTH
+ON SCHEDULE EVERY 1 MINUTE
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para suspender cuentas inactivas
-
-END //
+    -- Desactivar cuentas de clientes sin actividad en más de un año
+    UPDATE cliente
+    SET estado = 'inactivo'
+    WHERE DATEDIFF(NOW(), ultima_compra) > 1 -- toco cambiar estoa  1 para probarlo
+    AND estado = 'activo';
+END$$
 
 DELIMITER ;
+
+--- como usarlo:
+SELECT id_cliente, nombre, estado, ultima_compra
+FROM cliente
+WHERE estado = 'inactivo';
+
+UPDATE cliente
+SET ultima_compra = DATE_SUB(NOW(), INTERVAL 1 YEAR)
+WHERE id_cliente = 1;
+
 
 
 -- 9. evt_aggregate_daily_sales_data: Agrega ventas diarias en tabla resumen.
 
-DROP EVENT IF EXISTS evt_aggregate_daily_sales_data;
-
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_aggregate_daily_sales_data
-ON SCHEDULE
-    EVERY 1 DAY
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para consolidar datos de ventas del día
-
-END //
+    -- Calcular el total de ventas del día y agregar a la tabla resumen_ventas_diarias
+    INSERT INTO resumen_ventas_diarias (fecha, total_ventas, total_productos_vendidos)
+    SELECT CURDATE(), 
+            SUM(v.total), 
+            SUM(pv.cantidad)  -- Total de productos vendidos
+    FROM venta v
+    LEFT JOIN producto_venta pv ON v.id_venta = pv.id_venta_fk
+    WHERE DATE(v.fecha_venta) = CURDATE()
+    ON DUPLICATE KEY UPDATE 
+        total_ventas = VALUES(total_ventas), 
+        total_productos_vendidos = VALUES(total_productos_vendidos);
+END$$
 
 DELIMITER ;
+
+--- como usarlo:
+SELECT fecha, total_ventas, total_productos_vendidos
+FROM resumen_ventas_diarias
+WHERE fecha = CURDATE();
 
 
 -- 10. evt_check_data_consistency_nightly: Busca inconsistencias en los datos.
 
-DROP EVENT IF EXISTS evt_check_data_consistency_nightly;
-
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_check_data_consistency_nightly
-ON SCHEDULE
-    EVERY 1 DAY
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para verificar consistencia de datos
+    -- 1. Buscar ventas sin cliente asociado
+    INSERT INTO auditoria_consistencia_datos (tabla, error, descripcion, fecha)
+    SELECT 'venta', 'Cliente inexistente', CONCAT('Venta con id_venta ', id_venta, ' no tiene cliente asociado'), NOW()
+    FROM venta
+    WHERE id_cliente_fk IS NULL;
 
-END //
+    -- 2. Buscar ventas sin producto asociado
+    INSERT INTO auditoria_consistencia_datos (tabla, error, descripcion, fecha)
+    SELECT 'venta', 'Producto inexistente', CONCAT('Venta con id_venta ', id_venta, ' no tiene producto asociado'), NOW()
+    FROM venta v
+    LEFT JOIN producto_venta pv ON v.id_venta = pv.id_venta_fk
+    WHERE pv.id_producto_fk IS NULL;
+
+    -- 3. Buscar productos sin categoría asignada
+    INSERT INTO auditoria_consistencia_datos (tabla, error, descripcion, fecha)
+    SELECT 'producto', 'Sin categoría asignada', CONCAT('Producto con id_producto ', id_producto, ' no tiene categoría asignada'), NOW()
+    FROM producto
+    WHERE id_producto NOT IN (SELECT id_producto_fk FROM producto_categoria);
+
+    -- 4. Buscar clientes con datos incompletos (sin nombre o apellido)
+    INSERT INTO auditoria_consistencia_datos (tabla, error, descripcion, fecha)
+    SELECT 'cliente', 'Datos incompletos', CONCAT('Cliente con id_cliente ', id_cliente, ' tiene nombre o apellido nulos'), NOW()
+    FROM cliente
+    WHERE nombre IS NULL OR apellido IS NULL;
+END$$
 
 DELIMITER ;
+
+--- se pasaron de lanza con este evento, como consultarlo:
+SELECT * FROM auditoria_consistencia_datos WHERE fecha >= CURDATE();
 
 
 -- 11. evt_send_birthday_greetings_daily: Envía cupones a clientes que cumplen años.
 
-DROP EVENT IF EXISTS evt_send_birthday_greetings_daily;
+DELIMITER $$
 
-DELIMITER //
-
-CREATE EVENT evt_send_birthday_greetings_daily
-ON SCHEDULE
-    EVERY 1 DAY
-DO
+CREATE EVENT evt_send_birthday_greetings_daily 
+ON SCHEDULE EVERY 1 DAY 
+STARTS CURRENT_TIMESTAMP 
+DO 
 BEGIN
-    -- Lógica para generar felicitaciones y cupones
-
-END //
+    -- TODAS LAS DECLARACIONES PRIMERO
+    DECLARE cliente_id INT;
+    DECLARE cliente_email VARCHAR(120);
+    DECLARE cliente_nombre VARCHAR(100);
+    DECLARE cupon_codigo VARCHAR(50);
+    DECLARE descuento DECIMAL(10,2);
+    DECLARE done INT DEFAULT 0;
+    
+    -- Declarar el CURSOR después de las variables
+    DECLARE cur CURSOR FOR 
+        SELECT id_cliente, email, nombre
+        FROM cliente
+        WHERE DATE(fecha_nacimiento) = CURDATE();
+    
+    -- Declarar el HANDLER al final de todas las declaraciones
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    
+    -- AHORA SÍ LAS INSTRUCCIONES EJECUTABLES
+    SET descuento = 10.00;
+    
+    -- Abrir el cursor y asignar cupones de cumpleaños
+    OPEN cur;
+    
+    read_loop: LOOP
+        FETCH cur INTO cliente_id, cliente_email, cliente_nombre;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- Generar un código único para el cupón
+        SET cupon_codigo = CONCAT('CUPON-', cliente_id, '-', DATE_FORMAT(NOW(), '%Y%m%d'));
+        
+        -- Insertar el cupón en la tabla de cupones
+        INSERT INTO cupones_cumpleanos (id_cliente_fk, codigo_cupon, descuento)
+        VALUES (cliente_id, cupon_codigo, descuento);
+        
+    END LOOP;
+    
+    CLOSE cur;
+END$$
 
 DELIMITER ;
+DROP EVENT IF EXISTS evt_send_birthday_greetings_daily;
+
+--- antes de ejecutarlo primero hacer este insert creado especificamente para este evento:
+INSERT INTO cliente (
+    nombre,
+    apellido,
+    email,
+    clave,
+    fecha_registro,
+    fecha_nacimiento,
+    estado
+)
+VALUES
+    ('Juanito', 'Alcachofa', 'juan.alcachofa@example.com', 'password123', NOW(), NOW(), 'activo');
+
+SELECT * FROM cupones_cumpleanos WHERE id_cliente_fk = (SELECT id_cliente FROM cliente WHERE email = 'juan.alcachofa@example.com');
 
 
 -- 12. evt_update_product_rankings_hourly: Actualiza ranking de productos.
 
-DROP EVENT IF EXISTS evt_update_product_rankings_hourly;
+CREATE TABLE IF NOT EXISTS ranking_productos (
+    id_producto_fk INT NOT NULL,
+    total_vendido DECIMAL(12,2) NOT NULL DEFAULT 0,
+    total_cantidad INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (id_producto_fk),
+    CONSTRAINT fk_ranking_producto FOREIGN KEY (id_producto_fk)
+        REFERENCES producto (id_producto)
+        ON DELETE CASCADE,
+    INDEX idx_total_vendido (total_vendido DESC)
+);
 
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_update_product_rankings_hourly
-ON SCHEDULE
-    EVERY 1 HOUR
+ON SCHEDULE EVERY 1 HOUR
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para recalcular popularidad de productos
-
-END //
+    INSERT INTO ranking_productos (id_producto_fk, total_vendido, total_cantidad)
+    SELECT 
+        pv.id_producto_fk,
+        SUM(pv.cantidad * pv.precio_unitario) AS total_vendido,
+        SUM(pv.cantidad) AS total_cantidad
+    FROM producto_venta pv
+    GROUP BY pv.id_producto_fk
+    ON DUPLICATE KEY UPDATE
+        total_vendido = VALUES(total_vendido),
+        total_cantidad = VALUES(total_cantidad);
+END$$
 
 DELIMITER ;
+
+--- como usarlo:
+SELECT 
+    r.id_producto_fk,
+    p.nombre AS producto,
+    r.total_cantidad,
+    r.total_vendido,
+    RANK() OVER (ORDER BY r.total_vendido DESC) AS posicion
+FROM ranking_productos r
+JOIN producto p ON p.id_producto = r.id_producto_fk
+ORDER BY r.total_vendido DESC;
 
 
 -- 13. evt_backup_critical_tables_daily: Realiza backup de tablas críticas.
 
-DROP EVENT IF EXISTS evt_backup_critical_tables_daily;
-
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_backup_critical_tables_daily
-ON SCHEDULE
-    EVERY 1 DAY
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para realizar copias de seguridad
+    -- Copias de seguridad de las tablas críticas en tablas con sufijo "_backup"
+    
+    -- Respaldar tabla cliente
+    CREATE TABLE IF NOT EXISTS cliente_backup AS
+    SELECT * FROM cliente;
+    TRUNCATE TABLE cliente_backup;
+    INSERT INTO cliente_backup SELECT * FROM cliente;
 
-END //
+    -- Respaldar tabla venta
+    CREATE TABLE IF NOT EXISTS venta_backup AS
+    SELECT * FROM venta;
+    TRUNCATE TABLE venta_backup;
+    INSERT INTO venta_backup SELECT * FROM venta;
+
+    -- Respaldar tabla producto
+    CREATE TABLE IF NOT EXISTS producto_backup AS
+    SELECT * FROM producto;
+    TRUNCATE TABLE producto_backup;
+    INSERT INTO producto_backup SELECT * FROM producto;
+
+    -- Respaldar tabla producto_venta
+    CREATE TABLE IF NOT EXISTS producto_venta_backup AS
+    SELECT * FROM producto_venta;
+    TRUNCATE TABLE producto_venta_backup;
+    INSERT INTO producto_venta_backup SELECT * FROM producto_venta;
+
+END$$
 
 DELIMITER ;
+
+--- como usarlo: 
+
+SHOW TABLES LIKE '%backup%';
+
+SELECT * FROM venta_backup;
 
 
 -- 14. evt_clear_abandoned_carts_daily: Limpia carritos abandonados.
 
-DROP EVENT IF EXISTS evt_clear_abandoned_carts_daily;
-
-DELIMITER //
+DELIMITER $$
 
 CREATE EVENT evt_clear_abandoned_carts_daily
-ON SCHEDULE
-    EVERY 1 DAY
+ON SCHEDULE EVERY 1 MINUTE
+STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
-    -- Lógica para eliminar carritos de más de 72 horas
-
-END //
+    DELETE FROM carrito
+    WHERE estado = 'abandonado'
+        AND TIMESTAMPDIFF(MINUTE, fecha_creacion, NOW()) > 1;
+END$$
 
 DELIMITER ;
+
+--- para usarlo: 
+INSERT INTO carrito (id_carrito, id_producto_fk, id_cliente_fk, cantidad, fecha_creacion, fecha_actualizacion, estado)
+VALUES
+    (1001, 5, 2, 1, NOW(), NOW(), 'abandonado'),
+    (1001, 6, 2, 1, NOW(), NOW(), 'abandonado');
+
+SELECT * FROM carrito WHERE id_carrito = 1001;
 
 
 -- 15. evt_calculate_monthly_kpis: Calcula KPIs mensuales.

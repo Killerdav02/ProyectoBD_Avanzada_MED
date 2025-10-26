@@ -31,7 +31,7 @@ VALUES (
         5.00
     );
 
---- insercion de clientes
+--- insercion de cliente
 INSERT INTO
     cliente (
         nombre,
