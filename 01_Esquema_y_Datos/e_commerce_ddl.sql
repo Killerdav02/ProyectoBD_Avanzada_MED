@@ -143,14 +143,14 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- Table `e_commerce_db`.`descuento`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`descuento` (
-  `id_descuento` INT NOT NULL,
+  `id_descuento` INT NOT NULL AUTO_INCREMENT,
   `tipo` ENUM('puntos', 'cumpleaños', 'categoria', 'producto') NULL DEFAULT NULL,
   `valor` DECIMAL(10,2) NULL DEFAULT NULL,
   `nombre` ENUM('porcentaje') NULL DEFAULT 'porcentaje',
   `fecha_inicio` DATETIME NULL DEFAULT NULL,
   `fecha_fin` DATETIME NULL DEFAULT NULL,
-  PRIMARY KEY (`id_descuento`))
-ENGINE = InnoDB
+  PRIMARY KEY (`id_descuento`)
+) ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
@@ -452,6 +452,22 @@ CREATE TABLE IF NOT EXISTS log_mantenimiento_indices (
     estado ENUM('exitoso', 'fallido') DEFAULT 'exitoso',
     mensaje TEXT,
     INDEX idx_fecha (fecha_ejecucion)
+) ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_estado_venta` (
+    `id_auditoria_estado_venta` INT AUTO_INCREMENT PRIMARY KEY,
+    `id_venta_fk` INT NOT NULL,
+    `estado_anterior` ENUM('Pendiente', 'Procesando', 'Enviado', 'Entregado', 'Cancelado') NOT NULL,
+    `estado_nuevo` ENUM('Pendiente', 'Procesando', 'Enviado', 'Entregado', 'Cancelado') NOT NULL,
+    `id_cliente_fk` INT NOT NULL,
+    `total_venta` DECIMAL(12,2) NULL,
+    `fecha_cambio` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (`id_venta_fk`) REFERENCES `e_commerce_db`.`venta` (`id_venta`),
+    FOREIGN KEY (`id_cliente_fk`) REFERENCES `e_commerce_db`.`cliente` (`id_cliente`),
+    INDEX idx_fecha_cambio (fecha_cambio),
+    INDEX idx_venta (id_venta_fk)
 ) ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;

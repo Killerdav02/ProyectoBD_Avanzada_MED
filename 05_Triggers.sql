@@ -281,87 +281,290 @@ WHERE id_producto = 1;
 
 -- 8. trg_prevent_negative_stock: Impide que el stock de un producto sea negativo.
 
-DROP TRIGGER IF EXISTS trg_prevent_negative_stock;
+DELIMITER $$
 
-DELIMITER //
-CREATE TRIGGER trg_prevent_negative_stock
-BEFORE UPDATE ON producto
+CREATE TRIGGER check_stock_before_update
+BEFORE UPDATE ON inventario
 FOR EACH ROW
 BEGIN
-    -- Lógica para impedir stock negativo
+    -- Verificar si el nuevo valor de stock es negativo
+    IF NEW.stock < 0 THEN
+        -- Lanzar un error si el stock es negativo
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se puede actualizar el stock a un valor negativo';
+    END IF;
+END$$
 
-END //
 DELIMITER ;
+--- como probarlo:
+UPDATE inventario
+SET stock = -10
+WHERE id_producto_fk = 1;
 
 -- 9. trg_capitalize_nombre_cliente: Convierte la primera letra del nombre y apellido a mayúscula.
 
-DROP TRIGGER IF EXISTS trg_capitalize_nombre_cliente;
+DELIMITER $$
 
-DELIMITER //
-CREATE TRIGGER trg_capitalize_nombre_cliente
+-- Trigger para convertir la primera letra a mayúscula al insertar un cliente
+CREATE TRIGGER convertir_mayusculas_nombre_insert
 BEFORE INSERT ON cliente
 FOR EACH ROW
 BEGIN
-    -- Lógica para capitalizar nombre y apellido
+    -- Convertir la primera letra del nombre y apellido a mayúscula y el resto a minúsculas
+    SET NEW.nombre = CONCAT(UPPER(SUBSTRING(NEW.nombre, 1, 1)), LOWER(SUBSTRING(NEW.nombre, 2)));
+    SET NEW.apellido = CONCAT(UPPER(SUBSTRING(NEW.apellido, 1, 1)), LOWER(SUBSTRING(NEW.apellido, 2)));
+END$$
 
-END //
+-- Trigger para convertir la primera letra a mayúscula al actualizar un cliente
+CREATE TRIGGER convertir_mayusculas_nombre_update
+BEFORE UPDATE ON cliente
+FOR EACH ROW
+BEGIN
+    -- Convertir la primera letra del nombre y apellido a mayúscula y el resto a minúsculas
+    SET NEW.nombre = CONCAT(UPPER(SUBSTRING(NEW.nombre, 1, 1)), LOWER(SUBSTRING(NEW.nombre, 2)));
+    SET NEW.apellido = CONCAT(UPPER(SUBSTRING(NEW.apellido, 1, 1)), LOWER(SUBSTRING(NEW.apellido, 2)));
+END$$
+
 DELIMITER ;
+
+--- como probarlo normal y si se actualiza:
+INSERT INTO cliente (nombre, apellido, email, clave, fecha_registro, fecha_nacimiento)
+VALUES ('juan', 'perez', 'juan.perez@example.com', 'password', '2025-10-01', '1990-05-12');
+
+UPDATE cliente
+SET nombre = 'maria', apellido = 'garcia'
+WHERE email = 'juan.perez@example.com';
 
 -- 10. trg_recalculate_total_venta_on_detalle_change: Recalcula el total de una venta al modificar detalles.
 
-DROP TRIGGER IF EXISTS trg_recalculate_total_venta_on_detalle_change;
+DELIMITER $$
 
-DELIMITER //
+CREATE FUNCTION recalcular_total_venta(id_venta INT)
+RETURNS DECIMAL(12,2)
+DELIMITER $$
+
 CREATE TRIGGER trg_recalculate_total_venta_on_detalle_change
-AFTER UPDATE ON venta_detalle
+AFTER UPDATE ON producto_venta
 FOR EACH ROW
 BEGIN
-    -- Lógica para recalcular el total de la venta
+    DECLARE nuevo_total DECIMAL(12,2);
 
-END //
+    -- Calcular el nuevo total de la venta
+    SELECT SUM(pv.cantidad * pv.precio_unitario) INTO nuevo_total
+    FROM producto_venta pv
+    WHERE pv.id_venta_fk = NEW.id_venta_fk;
+
+    -- Actualizar el total de la venta en la tabla 'venta'
+    UPDATE venta
+    SET total = nuevo_total
+    WHERE id_venta = NEW.id_venta_fk;
+END$$
+
 DELIMITER ;
+
+-- como probar
+SELECT * 
+FROM producto_venta
+WHERE id_venta_fk = 1;
+
+UPDATE producto_venta
+SET cantidad = 5 
+WHERE id_venta_fk = 1 AND id_producto_fk = 1;
+
+SELECT recalcular_total_venta(1) AS nuevo_total;
 
 -- 11. trg_log_order_status_change: Audita cada cambio de estado de un pedido.
 
-DROP TRIGGER IF EXISTS trg_log_order_status_change;
+DELIMITER $$
 
-DELIMITER //
 CREATE TRIGGER trg_log_order_status_change
-AFTER UPDATE ON pedido
+AFTER UPDATE ON `e_commerce_db`.`venta`
 FOR EACH ROW
 BEGIN
-    -- Lógica para registrar el cambio de estado
+    -- Solo registrar si el estado cambió
+    IF OLD.estado != NEW.estado THEN
+        INSERT INTO `e_commerce_db`.`auditoria_estado_venta` (
+            id_venta_fk,
+            estado_anterior,
+            estado_nuevo,
+            id_cliente_fk,
+            total_venta,
+            fecha_cambio
+        )
+        VALUES (
+            NEW.id_venta,
+            OLD.estado,
+            NEW.estado,
+            NEW.id_cliente_fk,
+            NEW.total,
+            NOW()
+        );
+    END IF;
+END$$
 
-END //
 DELIMITER ;
+
+--- como usarlo:
+SELECT id_venta, estado, id_cliente_fk, total 
+FROM venta 
+LIMIT 5;
+
+UPDATE venta 
+SET estado = 'Procesando' 
+WHERE id_venta = 1;
+
+UPDATE venta 
+SET estado = 'Enviado' 
+WHERE id_venta = 1;
+
+SELECT 
+    a.id_auditoria_estado_venta,
+    a.id_venta_fk,
+    a.estado_anterior,
+    a.estado_nuevo,
+    c.nombre AS cliente_nombre,
+    c.apellido AS cliente_apellido,
+    c.email AS cliente_email,
+    a.total_venta,
+    a.fecha_cambio
+FROM auditoria_estado_venta a
+INNER JOIN cliente c ON a.id_cliente_fk = c.id_cliente
+ORDER BY a.fecha_cambio DESC;
 
 -- 12. trg_prevent_price_zero_or_less: Impide que el precio de un producto sea cero o negativo.
 
-DROP TRIGGER IF EXISTS trg_prevent_price_zero_or_less;
+DELIMITER $$
 
-DELIMITER //
-CREATE TRIGGER trg_prevent_price_zero_or_less
-BEFORE UPDATE ON producto
+DROP TRIGGER IF EXISTS trg_prevent_price_zero_or_less_insert$$
+
+CREATE TRIGGER trg_prevent_price_zero_or_less_insert
+BEFORE INSERT ON `e_commerce_db`.`producto`
 FOR EACH ROW
 BEGIN
-    -- Lógica para validar precio mayor a cero
+    -- Validar que el precio no sea cero o negativo
+    IF NEW.precio IS NOT NULL AND NEW.precio <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: El precio del producto no puede ser cero o negativo';
+    END IF;
+    
+    -- Validar que el precio con IVA no sea cero o negativo
+    IF NEW.precio_iva IS NOT NULL AND NEW.precio_iva <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: El precio con IVA del producto no puede ser cero o negativo';
+    END IF;
+END$$
 
-END //
 DELIMITER ;
+
+
+DELIMITER $$
+
+DROP TRIGGER IF EXISTS trg_prevent_price_zero_or_less_update$$
+
+CREATE TRIGGER trg_prevent_price_zero_or_less_update
+BEFORE UPDATE ON `e_commerce_db`.`producto`
+FOR EACH ROW
+BEGIN
+    -- Validar que el precio no sea cero o negativo
+    IF NEW.precio IS NOT NULL AND NEW.precio <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: El precio del producto no puede ser cero o negativo';
+    END IF;
+    
+    -- Validar que el precio con IVA no sea cero o negativo
+    IF NEW.precio_iva IS NOT NULL AND NEW.precio_iva <= 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Error: El precio con IVA del producto no puede ser cero o negativo';
+    END IF;
+END$$
+
+DELIMITER ;
+
+--- como usarlo:
+INSERT INTO `e_commerce_db`.`producto` 
+    (nombre, descripcion, precio, activo, peso)
+VALUES
+    ('Producto de prueba', 'Descripción de prueba', 100.00, 1, 0.5);
+    
+INSERT INTO `e_commerce_db`.`producto` 
+    (nombre, descripcion, precio, activo, peso)
+VALUES
+    ('Producto de prueba 2', 'Descripción de prueba', 0.00, 1, 0.5);
+    
+UPDATE `e_commerce_db`.`producto` 
+SET precio = 0.00 
+WHERE id_producto = 1;
 
 -- 13. trg_send_stock_alert_on_low_stock: Crea una alerta cuando el stock baja de un umbral.
 
-DROP TRIGGER IF EXISTS trg_send_stock_alert_on_low_stock;
+DELIMITER $$
 
-DELIMITER //
+DROP TRIGGER IF EXISTS trg_send_stock_alert_on_low_stock$$
+
 CREATE TRIGGER trg_send_stock_alert_on_low_stock
-AFTER UPDATE ON producto
+AFTER UPDATE ON `e_commerce_db`.`inventario`
 FOR EACH ROW
 BEGIN
-    -- Lógica para generar alerta por bajo stock
+    DECLARE umbral INT DEFAULT 10;
+    
+    -- Solo actuar si el stock disminuyó
+    IF NEW.stock < OLD.stock AND NEW.stock <= umbral THEN
+        
+        -- Insertar alerta solo si no existe una alerta pendiente para este inventario
+        IF NOT EXISTS (
+            SELECT 1 
+            FROM alerta_stock 
+            WHERE id_inventario_fk = NEW.id_inventario 
+              AND estado = 'pendiente'
+        ) THEN
+            INSERT INTO `e_commerce_db`.`alerta_stock` (
+                id_inventario_fk,
+                stock_actual,
+                umbral_minimo,
+                fecha_alerta,
+                estado
+            )
+            VALUES (
+                NEW.id_inventario,
+                NEW.stock,
+                umbral,
+                NOW(),
+                'pendiente'
+            );
+        END IF;
+    END IF;
+END$$
 
-END //
 DELIMITER ;
+
+SELECT 
+    i.id_inventario,
+    i.id_producto_fk,
+    p.nombre,
+    i.sku,
+    i.stock
+FROM inventario i
+INNER JOIN producto p ON i.id_producto_fk = p.id_producto
+WHERE i.stock > 10
+LIMIT 5;
+
+--Como usar, reducir stock:
+UPDATE inventario 
+SET stock = 5 
+WHERE id_inventario = 1;
+
+-- Ver las alertas generadas
+SELECT 
+    a.id_alerta_stock,
+    p.nombre AS nombre_producto,
+    i.sku,
+    a.stock_actual,
+    a.umbral_minimo,
+    a.fecha_alerta,
+    a.estado
+FROM alerta_stock a
+INNER JOIN inventario i ON a.id_inventario_fk = i.id_inventario
+INNER JOIN producto p ON i.id_producto_fk = p.id_producto
+ORDER BY a.fecha_alerta DESC;
 
 -- 14. trg_archive_deleted_venta: Mueve una venta eliminada a una tabla de archivo.
 
