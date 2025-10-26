@@ -96,10 +96,10 @@ CREATE PROCEDURE sp_AgregarNuevoProducto(
 )
 BEGIN
     DECLARE v_precio_iva DECIMAL(10,2);
-    
+
     -- Calcular precio con IVA (supongamos 21%)
     SET v_precio_iva = p_precio * 1.21;
-    
+
     -- Insertar el producto
     INSERT INTO producto (nombre, descripcion, precio, precio_iva, activo, peso)
     VALUES (p_nombre, p_descripcion, p_precio, v_precio_iva, p_activo, p_peso);
@@ -147,7 +147,7 @@ BEGIN
         -- Si no existe, inserta una nueva dirección
         INSERT INTO direccion_envio (ciudad, barrio, calle, tipo)
         VALUES (p_ciudad, p_barrio, p_calle, p_tipo);
-        
+
         -- Opcional: asociar la nueva dirección al cliente
         SET v_id_direccion = LAST_INSERT_ID();
         -- UPDATE cliente SET id_direccion_envio = v_id_direccion WHERE id_cliente = p_id_cliente;
@@ -226,7 +226,7 @@ CREATE PROCEDURE sp_ObtenerHistorialComprasCliente(
     IN p_id_cliente INT
 )
 BEGIN
-    SELECT 
+    SELECT
         v.id_venta,
         v.fecha_venta,
         v.estado,
@@ -279,8 +279,8 @@ END$$
 
 DELIMITER ;
 
-CALL sp_AjustarNivelStock(1, 100);  -- Ajusta el stock a 100
-SELECT * FROM inventario WHERE id_producto_fk = 1;  -- Verifica el cambio
+CALL sp_AjustarNivelStock(1, 100);
+SELECT * FROM inventario WHERE id_producto_fk = 1;
 
 
 
@@ -296,7 +296,7 @@ CREATE PROCEDURE sp_EliminarClienteDeFormaSegura(
 BEGIN
     -- Actualizar el cliente con datos anónimos
     UPDATE cliente
-    SET 
+    SET
         nombre = CONCAT('Anonimo_', id_cliente),
         apellido = '',
         email = CONCAT('anonimo', id_cliente, '@example.com'),
@@ -314,7 +314,7 @@ DELIMITER ;
 CALL sp_EliminarClienteDeFormaSegura(3);
 
 -- Verificar los cambios en la tabla cliente
-SELECT * 
+SELECT *
 FROM cliente
 WHERE id_cliente = 3;
 

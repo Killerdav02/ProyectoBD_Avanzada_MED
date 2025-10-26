@@ -10,9 +10,9 @@ DO
 BEGIN
     DECLARE v_total_ventas DECIMAL(12,2);
     DECLARE v_total_productos INT;
-    
+
     -- Calcular total de ventas de la última semana
-    SELECT 
+    SELECT
         COALESCE(SUM(v.total), 0),
         COALESCE(SUM(pv.cantidad), 0)
     INTO v_total_ventas, v_total_productos
@@ -20,7 +20,7 @@ BEGIN
     LEFT JOIN producto_venta pv ON v.id_venta = pv.id_venta_fk
     WHERE v.fecha_venta >= DATE_SUB(CURRENT_DATE, INTERVAL 7 DAY)
     AND v.estado != 'Cancelado';
-    
+
     -- Insertar reporte en la tabla
     INSERT INTO reporte_ventas_semanal (fecha_reporte, total_ventas, total_productos)
     VALUES (NOW(), v_total_ventas, v_total_productos);
@@ -30,7 +30,7 @@ DELIMITER ;
 
 -- EJECUTAR MANUALMENTE EL REPORTE SEMANAL
 INSERT INTO reporte_ventas_semanal (fecha_reporte, total_ventas, total_productos)
-SELECT 
+SELECT
     NOW() as fecha_reporte,
     COALESCE(SUM(v.total), 0) as total_ventas,
     COALESCE(SUM(pv.cantidad), 0) as total_productos
@@ -52,21 +52,21 @@ STARTS CURRENT_TIMESTAMP + INTERVAL 2 MINUTE
 DO
 BEGIN
     DECLARE v_count INT DEFAULT 0;
-    
-    DELETE FROM carrito 
+
+    DELETE FROM carrito
     WHERE id_cliente_fk IN (
-        SELECT DISTINCT c.id_cliente_fk 
+        SELECT DISTINCT c.id_cliente_fk
         FROM (SELECT * FROM carrito) c
         LEFT JOIN venta v ON c.id_cliente_fk = v.id_cliente_fk
-        WHERE v.id_cliente_fk IS NULL 
+        WHERE v.id_cliente_fk IS NULL
         OR v.fecha_venta < DATE_SUB(NOW(), INTERVAL 30 DAY)
         GROUP BY c.id_cliente_fk
-        HAVING MAX(v.fecha_venta) < DATE_SUB(NOW(), INTERVAL 30 DAY) 
+        HAVING MAX(v.fecha_venta) < DATE_SUB(NOW(), INTERVAL 30 DAY)
         OR MAX(v.fecha_venta) IS NULL
     );
-    
+
     SET v_count = ROW_COUNT();
-    
+
     INSERT INTO log_cleanup_temp (fecha_limpieza, tablas_eliminadas, descripcion)
     VALUES (NOW(), v_count, CONCAT('Limpieza automática: ', v_count, ' registros'));
 END$$
@@ -76,15 +76,15 @@ DELIMITER ;
 ============ VERSIÓN MANUAL ============
 -- Ejecutar para limpiar carritos abandonados INMEDIATAMENTE
 
-DELETE FROM carrito 
+DELETE FROM carrito
 WHERE id_cliente_fk IN (
-    SELECT DISTINCT c.id_cliente_fk 
+    SELECT DISTINCT c.id_cliente_fk
     FROM (SELECT * FROM carrito) c
     LEFT JOIN venta v ON c.id_cliente_fk = v.id_cliente_fk
-    WHERE v.id_cliente_fk IS NULL 
+    WHERE v.id_cliente_fk IS NULL
     OR v.fecha_venta < DATE_SUB(NOW(), INTERVAL 30 DAY)
     GROUP BY c.id_cliente_fk
-    HAVING MAX(v.fecha_venta) < DATE_SUB(NOW(), INTERVAL 30 DAY) 
+    HAVING MAX(v.fecha_venta) < DATE_SUB(NOW(), INTERVAL 30 DAY)
     OR MAX(v.fecha_venta) IS NULL
 );
 
@@ -110,31 +110,31 @@ DO
 BEGIN
     DECLARE v_clientes INT DEFAULT 0;
     DECLARE v_precios INT DEFAULT 0;
-    
+
     -- Archivar auditoría de clientes mayores a 6 meses
-    INSERT INTO auditoria_cliente_historico 
+    INSERT INTO auditoria_cliente_historico
         (id_auditoria, id_cliente_fk, nombre, email, fecha_registro, fecha_archivo)
-    SELECT 
+    SELECT
         id_auditoria, id_cliente_fk, nombre, email, fecha_registro, NOW()
     FROM auditoria_cliente
     WHERE fecha_registro < DATE_SUB(NOW(), INTERVAL 6 MONTH);
-    
+
     SET v_clientes = ROW_COUNT();
-    
+
     -- Eliminar de tabla activa los registros archivados
     DELETE FROM auditoria_cliente
     WHERE fecha_registro < DATE_SUB(NOW(), INTERVAL 6 MONTH);
-    
+
     -- Archivar auditoría de precios mayores a 6 meses
-    INSERT INTO auditoria_precio_historico 
+    INSERT INTO auditoria_precio_historico
         (id_auditoria, id_producto_fk, precio_anterior, precio_nuevo, fecha_cambio, fecha_archivo)
-    SELECT 
+    SELECT
         id_auditoria, id_producto_fk, precio_anterior, precio_nuevo, fecha_cambio, NOW()
     FROM auditoria_precio
     WHERE fecha_cambio < DATE_SUB(NOW(), INTERVAL 6 MONTH);
-    
+
     SET v_precios = ROW_COUNT();
-    
+
     -- Eliminar de tabla activa los registros archivados
     DELETE FROM auditoria_precio
     WHERE fecha_cambio < DATE_SUB(NOW(), INTERVAL 6 MONTH);
@@ -149,7 +149,7 @@ DELIMITER ;
 SHOW EVENTS FROM e_commerce_db WHERE name = 'evt_archive_old_logs_monthly';
 
 -- Ver detalles completos del evento
-SELECT 
+SELECT
     EVENT_NAME as 'Nombre del Evento',
     EVENT_TYPE as 'Tipo',
     STATUS as 'Estado',
@@ -168,7 +168,7 @@ AND EVENT_NAME = 'evt_archive_old_logs_monthly';
 
 -- Insertar clientes con fechas antiguas (> 6 meses)
 INSERT INTO auditoria_cliente (id_cliente_fk, nombre, email, fecha_registro)
-VALUES 
+VALUES
 (1, 'Auto Cliente 1', 'auto1@example.com', DATE_SUB(NOW(), INTERVAL 7 MONTH)),
 (2, 'Auto Cliente 2', 'auto2@example.com', DATE_SUB(NOW(), INTERVAL 8 MONTH)),
 (3, 'Auto Cliente 3', 'auto3@example.com', DATE_SUB(NOW(), INTERVAL 9 MONTH)),
@@ -176,7 +176,7 @@ VALUES
 
 -- Insertar precios con fechas antiguas (> 6 meses)
 INSERT INTO auditoria_precio (id_producto_fk, precio_anterior, precio_nuevo, fecha_cambio)
-VALUES 
+VALUES
 (1, 100000.00, 120000.00, DATE_SUB(NOW(), INTERVAL 7 MONTH)),
 (2, 150000.00, 180000.00, DATE_SUB(NOW(), INTERVAL 8 MONTH)),
 (3, 200000.00, 220000.00, DATE_SUB(NOW(), INTERVAL 9 MONTH)),
@@ -188,32 +188,32 @@ VALUES
 
 SELECT 'ANTES DEL ARCHIVADO AUTOMÁTICO' as estado, '=' as separador;
 
-SELECT 
+SELECT
     'Clientes Activos' as tabla,
     COUNT(*) as registros,
     SUM(CASE WHEN fecha_registro < DATE_SUB(NOW(), INTERVAL 6 MONTH) THEN 1 ELSE 0 END) as 'serán_archivados'
 FROM auditoria_cliente
 UNION ALL
-SELECT 
+SELECT
     'Clientes Históricos',
     COUNT(*),
     NULL
 FROM auditoria_cliente_historico
 UNION ALL
-SELECT 
+SELECT
     'Precios Activos',
     COUNT(*),
     SUM(CASE WHEN fecha_cambio < DATE_SUB(NOW(), INTERVAL 6 MONTH) THEN 1 ELSE 0 END)
 FROM auditoria_precio
 UNION ALL
-SELECT 
+SELECT
     'Precios Históricos',
     COUNT(*),
     NULL
 FROM auditoria_precio_historico;
 
 -- Ver detalle de registros que serán archivados
-SELECT 
+SELECT
     ' Estos clientes serán archivados en 3 minutos' as info,
     id_auditoria,
     nombre,
@@ -222,7 +222,7 @@ SELECT
 FROM auditoria_cliente
 WHERE fecha_registro < DATE_SUB(NOW(), INTERVAL 6 MONTH);
 
-SELECT 
+SELECT
     ' Estos precios serán archivados en 3 minutos' as info,
     id_auditoria,
     id_producto_fk,
@@ -251,15 +251,15 @@ STARTS CURRENT_TIMESTAMP + INTERVAL 1 MINUTE  -- Inicia en 1 minuto
 DO
 BEGIN
     DECLARE v_desactivados INT DEFAULT 0;
-    
+
     -- Desactivar descuentos que ya expiraron
     UPDATE descuento
     SET activo = 0
-    WHERE fecha_fin < NOW() 
+    WHERE fecha_fin < NOW()
     AND activo = 1;
-    
+
     SET v_desactivados = ROW_COUNT();
-    
+
     -- Opcional: Log del proceso (puedes descomentar si quieres registro)
     -- INSERT INTO log_descuentos_desactivados VALUES (NOW(), v_desactivados);
 END$$
@@ -273,7 +273,7 @@ DELIMITER ;
 SHOW EVENTS FROM e_commerce_db WHERE name = 'evt_deactivate_expired_promotions_hourly';
 
 -- Ver detalles completos del evento
-SELECT 
+SELECT
     EVENT_NAME as 'Nombre del Evento',
     EVENT_TYPE as 'Tipo',
     STATUS as 'Estado',
@@ -290,7 +290,7 @@ AND EVENT_NAME = 'evt_deactivate_expired_promotions_hourly';
 -- =====================================================
 
 -- Agregar campo activo si no existe
-ALTER TABLE descuento 
+ALTER TABLE descuento
 ADD COLUMN IF NOT EXISTS activo TINYINT DEFAULT 1;
 
 -- Verificar estructura de la tabla
@@ -305,20 +305,20 @@ DELETE FROM descuento WHERE tipo IN ('producto', 'categoria') AND id_descuento >
 
 -- Insertar descuentos EXPIRADOS (serán desactivados automáticamente)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
-VALUES 
+VALUES
 (2, 'producto', 15.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 1),
 (3, 'categoria', 20.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 1),
 (4, 'producto', 10.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 1);
 
 -- Insertar descuentos VIGENTES (permanecerán activos)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
-VALUES 
+VALUES
 (5, 'categoria', 25.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1),
 (6, 'producto', 30.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 15 DAY), 1);
 
 -- Insertar descuento que EXPIRA EN 10 SEGUNDOS (para ver la desactivación en tiempo real)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
-VALUES 
+VALUES
 (7, 'cumpleaños', 5.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 10 SECOND), 1);
 
 -- =====================================================
@@ -328,7 +328,7 @@ VALUES
 SELECT 'ANTES DE LA DESACTIVACIÓN AUTOMÁTICA' as estado, '=' as separador;
 
 -- Resumen general
-SELECT 
+SELECT
     'Total Descuentos' as categoria,
     COUNT(*) as cantidad,
     SUM(CASE WHEN activo = 1 THEN 1 ELSE 0 END) as activos,
@@ -337,22 +337,22 @@ SELECT
 FROM descuento;
 
 -- Ver todos los descuentos con su estado
-SELECT 
+SELECT
     id_descuento,
     tipo,
     valor,
     activo,
     DATE_FORMAT(fecha_inicio, '%Y-%m-%d %H:%i:%s') as inicio,
     DATE_FORMAT(fecha_fin, '%Y-%m-%d %H:%i:%s') as fin,
-    CASE 
+    CASE
         WHEN fecha_fin < NOW() THEN '⏰ EXPIRADO'
         WHEN fecha_fin > NOW() THEN '✅ VIGENTE'
     END as estado_fecha,
-    CASE 
+    CASE
         WHEN activo = 1 THEN '🟢 Activo'
         ELSE '🔴 Inactivo'
     END as estado_sistema,
-    CASE 
+    CASE
         WHEN fecha_fin < NOW() AND activo = 1 THEN '⚠️ Será desactivado en 1 minuto'
         WHEN fecha_fin > NOW() AND activo = 1 THEN '✓ Permanecerá activo'
         ELSE '- Ya está inactivo'
@@ -362,7 +362,7 @@ FROM descuento
 ORDER BY fecha_fin;
 
 -- Descuentos que serán desactivados
-SELECT 
+SELECT
     '⏳ Estos descuentos serán desactivados AUTOMÁTICAMENTE en 1 minuto' as info,
     id_descuento,
     tipo,
@@ -370,7 +370,7 @@ SELECT
     DATE_FORMAT(fecha_fin, '%Y-%m-%d %H:%i:%s') as 'expiró_en',
     CONCAT(TIMESTAMPDIFF(DAY, fecha_fin, NOW()), ' días atrás') as 'hace_cuanto'
 FROM descuento
-WHERE fecha_fin < NOW() 
+WHERE fecha_fin < NOW()
 AND activo = 1;
 
 
@@ -391,38 +391,38 @@ STARTS CURRENT_TIMESTAMP + INTERVAL 2 MINUTE  -- Inicia en 2 minutos
 DO
 BEGIN
     DECLARE v_actualizados INT DEFAULT 0;
-    
+
     -- Actualizar membresía y puntos basados en compras del último año
     UPDATE cliente c
-    SET 
-        membresia = CASE 
-            WHEN (SELECT COALESCE(SUM(v.total), 0) 
-                  FROM venta v 
-                  WHERE v.id_cliente_fk = c.id_cliente 
+    SET
+        membresia = CASE
+            WHEN (SELECT COALESCE(SUM(v.total), 0)
+                  FROM venta v
+                  WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 5000000 
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 5000000
             THEN 'oro'
-            WHEN (SELECT COALESCE(SUM(v.total), 0) 
-                  FROM venta v 
-                  WHERE v.id_cliente_fk = c.id_cliente 
+            WHEN (SELECT COALESCE(SUM(v.total), 0)
+                  FROM venta v
+                  WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 2000000 
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 2000000
             THEN 'plata'
-            WHEN (SELECT COALESCE(SUM(v.total), 0) 
-                  FROM venta v 
-                  WHERE v.id_cliente_fk = c.id_cliente 
+            WHEN (SELECT COALESCE(SUM(v.total), 0)
+                  FROM venta v
+                  WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 500000 
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 500000
             THEN 'bronce'
             ELSE NULL
         END,
-        puntos = FLOOR((SELECT COALESCE(SUM(v.total), 0) 
-                        FROM venta v 
-                        WHERE v.id_cliente_fk = c.id_cliente 
+        puntos = FLOOR((SELECT COALESCE(SUM(v.total), 0)
+                        FROM venta v
+                        WHERE v.id_cliente_fk = c.id_cliente
                         AND v.estado = 'Entregado'
                         AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) / 10000)
     WHERE c.estado = 'activo';
-    
+
     SET v_actualizados = ROW_COUNT();
 END$$
 DELIMITER ;
@@ -435,7 +435,7 @@ DELIMITER ;
 SHOW EVENTS FROM e_commerce_db WHERE name = 'evt_recalculate_customer_loyalty_tiers_nightly';
 
 -- Ver detalles completos del evento
-SELECT 
+SELECT
     EVENT_NAME as 'Nombre del Evento',
     EVENT_TYPE as 'Tipo',
     STATUS as 'Estado',
@@ -455,14 +455,14 @@ AND EVENT_NAME = 'evt_recalculate_customer_loyalty_tiers_nightly';
 DESC cliente;
 
 -- Ver clientes actuales y su membresía
-SELECT 
+SELECT
     id_cliente,
     nombre,
     apellido,
     membresia,
     puntos,
     estado
-FROM cliente 
+FROM cliente
 LIMIT 10;
 
 -- =====================================================
@@ -472,8 +472,8 @@ LIMIT 10;
 -- Primero, vamos a actualizar algunas ventas existentes para tener datos del último año
 -- y cambiar su estado a 'Entregado' para que cuenten para la membresía
 
-UPDATE venta 
-SET estado = 'Entregado', 
+UPDATE venta
+SET estado = 'Entregado',
     fecha_venta = DATE_SUB(NOW(), INTERVAL 3 MONTH)
 WHERE id_venta = 1;
 
@@ -481,37 +481,37 @@ WHERE id_venta = 1;
 
 -- Cliente 1: Ventas para nivel ORO (> 5,000,000)
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 2 MONTH), 'Entregado', 2000000.00, 1, 1, 1, 2),
 (DATE_SUB(NOW(), INTERVAL 4 MONTH), 'Entregado', 1800000.00, 1, 1, 1, 2),
 (DATE_SUB(NOW(), INTERVAL 6 MONTH), 'Entregado', 1500000.00, 1, 1, 1, 2);
 
 -- Cliente 2: Ventas para nivel PLATA (> 2,000,000)
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 1 MONTH), 'Entregado', 1200000.00, 2, 1, 1, 2),
 (DATE_SUB(NOW(), INTERVAL 5 MONTH), 'Entregado', 900000.00, 2, 1, 1, 2);
 
 -- Cliente 3: Ventas para nivel BRONCE (> 500,000)
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 2 MONTH), 'Entregado', 350000.00, 3, 1, 1, 2),
 (DATE_SUB(NOW(), INTERVAL 7 MONTH), 'Entregado', 200000.00, 3, 1, 1, 2);
 
 -- Cliente 4: Ventas insuficientes (< 500,000) - SIN MEMBRESÍA
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 3 MONTH), 'Entregado', 150000.00, 4, 1, 1, 2),
 (DATE_SUB(NOW(), INTERVAL 8 MONTH), 'Entregado', 100000.00, 4, 1, 1, 2);
 
 -- Cliente 5: Ventas muy antiguas (> 1 año) - NO CUENTAN
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 14 MONTH), 'Entregado', 3000000.00, 5, 1, 1, 2);
 
 -- Cliente 6: Ventas pendientes - NO CUENTAN (estado diferente a 'Entregado')
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
-VALUES 
+VALUES
 (DATE_SUB(NOW(), INTERVAL 2 MONTH), 'Pendiente', 4000000.00, 6, 1, 1, 2);
 
 -- =====================================================
@@ -521,48 +521,48 @@ VALUES
 SELECT 'ANTES DEL RECÁLCULO AUTOMÁTICO DE LEALTAD' as estado, '=' as separador;
 
 -- Resumen de membresías actuales
-SELECT 
+SELECT
     'Total Clientes Activos' as categoria,
     COUNT(*) as cantidad,
     SUM(CASE WHEN membresia = 'oro' THEN 1 ELSE 0 END) as oro,
     SUM(CASE WHEN membresia = 'plata' THEN 1 ELSE 0 END) as plata,
     SUM(CASE WHEN membresia = 'bronce' THEN 1 ELSE 0 END) as bronce,
     SUM(CASE WHEN membresia IS NULL THEN 1 ELSE 0 END) as sin_membresia
-FROM cliente 
+FROM cliente
 WHERE estado = 'activo';
 
 -- Ver clientes con sus compras del último año y nivel que DEBERÍAN tener
-SELECT 
+SELECT
     c.id_cliente,
     CONCAT(c.nombre, ' ', c.apellido) as cliente,
     c.membresia as membresia_actual,
     c.puntos as puntos_actuales,
-    FORMAT(COALESCE(SUM(CASE 
-        WHEN v.estado = 'Entregado' 
-        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+    FORMAT(COALESCE(SUM(CASE
+        WHEN v.estado = 'Entregado'
+        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
         THEN v.total ELSE 0 END), 0), 2) as compras_ultimo_año,
-    COUNT(CASE 
-        WHEN v.estado = 'Entregado' 
-        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+    COUNT(CASE
+        WHEN v.estado = 'Entregado'
+        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
         THEN 1 END) as num_compras,
-    CASE 
-        WHEN COALESCE(SUM(CASE 
-            WHEN v.estado = 'Entregado' 
-            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+    CASE
+        WHEN COALESCE(SUM(CASE
+            WHEN v.estado = 'Entregado'
+            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
             THEN v.total ELSE 0 END), 0) >= 5000000 THEN '🥇 ORO'
-        WHEN COALESCE(SUM(CASE 
-            WHEN v.estado = 'Entregado' 
-            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+        WHEN COALESCE(SUM(CASE
+            WHEN v.estado = 'Entregado'
+            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
             THEN v.total ELSE 0 END), 0) >= 2000000 THEN '🥈 PLATA'
-        WHEN COALESCE(SUM(CASE 
-            WHEN v.estado = 'Entregado' 
-            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+        WHEN COALESCE(SUM(CASE
+            WHEN v.estado = 'Entregado'
+            AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
             THEN v.total ELSE 0 END), 0) >= 500000 THEN '🥉 BRONCE'
         ELSE '- SIN MEMBRESÍA'
     END as nivel_esperado,
-    FLOOR(COALESCE(SUM(CASE 
-        WHEN v.estado = 'Entregado' 
-        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+    FLOOR(COALESCE(SUM(CASE
+        WHEN v.estado = 'Entregado'
+        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
         THEN v.total ELSE 0 END), 0) / 10000) as puntos_esperados
 FROM cliente c
 LEFT JOIN venta v ON c.id_cliente = v.id_cliente_fk
@@ -572,7 +572,7 @@ ORDER BY compras_ultimo_año DESC
 LIMIT 10;
 
 -- Ver detalle de ventas por cliente
-SELECT 
+SELECT
     ' Detalle de ventas del último año' as info,
     v.id_cliente_fk,
     CONCAT(c.nombre, ' ', c.apellido) as cliente,
@@ -580,13 +580,13 @@ SELECT
     DATE_FORMAT(v.fecha_venta, '%Y-%m-%d') as fecha,
     v.estado,
     FORMAT(v.total, 2) as monto,
-    CASE 
-        WHEN v.estado = 'Entregado' 
-        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+    CASE
+        WHEN v.estado = 'Entregado'
+        AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
         THEN ' Cuenta para membresía'
-        WHEN v.estado != 'Entregado' 
+        WHEN v.estado != 'Entregado'
         THEN ' Estado no válido'
-        WHEN v.fecha_venta < DATE_SUB(NOW(), INTERVAL 1 YEAR) 
+        WHEN v.fecha_venta < DATE_SUB(NOW(), INTERVAL 1 YEAR)
         THEN ' Muy antigua (>1 año)'
         ELSE ' No cuenta'
     END as valida
@@ -607,11 +607,11 @@ STARTS CURRENT_DATE + INTERVAL 1 DAY + INTERVAL 6 HOUR  -- Se ejecuta a las 6:00
 DO
 BEGIN
     -- Marcar registros del día anterior como procesados
-    UPDATE lista_reabastecimiento 
+    UPDATE lista_reabastecimiento
     SET estado = 'procesado'
-    WHERE DATE(fecha_generacion) < CURDATE() 
+    WHERE DATE(fecha_generacion) < CURDATE()
     AND estado = 'pendiente';
-    
+
     -- Insertar productos que necesitan reabastecimiento
     -- Criterio: stock actual <= 20% del stock promedio o menos de 10 unidades
     INSERT INTO lista_reabastecimiento (
@@ -622,7 +622,7 @@ BEGIN
         cantidad_sugerida,
         fecha_generacion
     )
-    SELECT 
+    SELECT
         i.id_producto_fk,
         p.nombre,
         i.stock AS stock_actual,
@@ -634,18 +634,18 @@ BEGIN
         NOW() AS fecha_generacion
     FROM inventario i
     INNER JOIN producto p ON i.id_producto_fk = p.id_producto
-    WHERE 
+    WHERE
         i.stock <= 20  -- Productos con stock bajo
         AND p.activo = 1  -- Solo productos activos
         AND NOT EXISTS (  -- Evitar duplicados del mismo día
-            SELECT 1 
+            SELECT 1
             FROM lista_reabastecimiento lr
             WHERE lr.id_producto_fk = i.id_producto_fk
             AND DATE(lr.fecha_generacion) = CURDATE()
             AND lr.estado = 'pendiente'
         )
     ORDER BY i.stock ASC;  -- Priorizar productos con menor stock
-    
+
 END$$
 
 DELIMITER ;
@@ -654,7 +654,7 @@ DELIMITER ;
 -- Vista para consultar productos a reabastecer
 -- ================================================
 CREATE OR REPLACE VIEW v_productos_reabastecer AS
-SELECT 
+SELECT
     lr.id_lista,
     lr.id_producto_fk,
     lr.nombre_producto,
@@ -691,31 +691,31 @@ BEGIN
     DECLARE tabla_actual VARCHAR(100);
     DECLARE done INT DEFAULT FALSE;
     DECLARE mensaje_log TEXT;
-    
+
     -- Cursor para iterar sobre todas las tablas de la base de datos
-    DECLARE cursor_tablas CURSOR FOR 
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'e_commerce_db' 
+    DECLARE cursor_tablas CURSOR FOR
+        SELECT table_name
+        FROM information_schema.tables
+        WHERE table_schema = 'e_commerce_db'
         AND table_type = 'BASE TABLE'
         AND table_name NOT LIKE 'log_%';  -- Excluir tablas de log
-    
+
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-    
+
     -- Iniciar el proceso
     INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, mensaje)
     VALUES ('SISTEMA', 'INICIO_MANTENIMIENTO', 'Iniciando mantenimiento semanal de índices');
-    
+
     -- Abrir cursor
     OPEN cursor_tablas;
-    
+
     read_loop: LOOP
         FETCH cursor_tablas INTO tabla_actual;
-        
+
         IF done THEN
             LEAVE read_loop;
         END IF;
-        
+
         -- Optimizar tabla (reconstruye índices y desfragmenta)
         BEGIN
             DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -723,16 +723,16 @@ BEGIN
                 INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, estado, mensaje)
                 VALUES (tabla_actual, 'OPTIMIZE', 'fallido', CONCAT('Error al optimizar tabla: ', tabla_actual));
             END;
-            
+
             SET @sql = CONCAT('OPTIMIZE TABLE `', tabla_actual, '`');
             PREPARE stmt FROM @sql;
             EXECUTE stmt;
             DEALLOCATE PREPARE stmt;
-            
+
             INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, estado, mensaje)
             VALUES (tabla_actual, 'OPTIMIZE', 'exitoso', CONCAT('Tabla optimizada correctamente: ', tabla_actual));
         END;
-        
+
         -- Analizar tabla (actualiza estadísticas de índices)
         BEGIN
             DECLARE EXIT HANDLER FOR SQLEXCEPTION
@@ -740,28 +740,28 @@ BEGIN
                 INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, estado, mensaje)
                 VALUES (tabla_actual, 'ANALYZE', 'fallido', CONCAT('Error al analizar tabla: ', tabla_actual));
             END;
-            
+
             SET @sql = CONCAT('ANALYZE TABLE `', tabla_actual, '`');
             PREPARE stmt FROM @sql;
             EXECUTE stmt;
             DEALLOCATE PREPARE stmt;
-            
+
             INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, estado, mensaje)
             VALUES (tabla_actual, 'ANALYZE', 'exitoso', CONCAT('Tabla analizada correctamente: ', tabla_actual));
         END;
-        
+
     END LOOP;
-    
+
     CLOSE cursor_tablas;
-    
+
     -- Finalizar el proceso
     INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, mensaje)
     VALUES ('SISTEMA', 'FIN_MANTENIMIENTO', 'Mantenimiento semanal de índices completado');
-    
+
     -- Limpiar logs antiguos (más de 90 días)
-    DELETE FROM log_mantenimiento_indices 
+    DELETE FROM log_mantenimiento_indices
     WHERE fecha_ejecucion < DATE_SUB(NOW(), INTERVAL 90 DAY);
-    
+
 END$$
 
 DELIMITER ;
@@ -770,7 +770,7 @@ DELIMITER ;
 -- Vista para consultar historial de mantenimiento
 -- ================================================
 CREATE OR REPLACE VIEW v_historial_mantenimiento_indices AS
-SELECT 
+SELECT
     id_log,
     tabla_nombre,
     accion,
@@ -785,7 +785,7 @@ ORDER BY fecha_ejecucion DESC;
 -- Vista para resumen de último mantenimiento
 -- ================================================
 CREATE OR REPLACE VIEW v_ultimo_mantenimiento AS
-SELECT 
+SELECT
     tabla_nombre,
     accion,
     estado,
@@ -793,8 +793,8 @@ SELECT
     mensaje
 FROM log_mantenimiento_indices
 WHERE DATE(fecha_ejecucion) = (
-    SELECT MAX(DATE(fecha_ejecucion)) 
-    FROM log_mantenimiento_indices 
+    SELECT MAX(DATE(fecha_ejecucion))
+    FROM log_mantenimiento_indices
     WHERE accion IN ('OPTIMIZE', 'ANALYZE')
 )
 ORDER BY fecha_ejecucion DESC;
@@ -814,26 +814,26 @@ BEGIN
         VALUES (p_tabla, 'MANUAL', 'fallido', CONCAT('Error en mantenimiento manual de: ', p_tabla));
         ROLLBACK;
     END;
-    
+
     START TRANSACTION;
-    
+
     -- Optimizar tabla específica
     SET @sql = CONCAT('OPTIMIZE TABLE `', p_tabla, '`');
     PREPARE stmt FROM @sql;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
-    
+
     -- Analizar tabla específica
     SET @sql = CONCAT('ANALYZE TABLE `', p_tabla, '`');
     PREPARE stmt FROM @sql;
     EXECUTE stmt;
     DEALLOCATE PREPARE stmt;
-    
+
     INSERT INTO log_mantenimiento_indices (tabla_nombre, accion, estado, mensaje)
     VALUES (p_tabla, 'MANUAL', 'exitoso', CONCAT('Mantenimiento manual completado para: ', p_tabla));
-    
+
     COMMIT;
-    
+
     SELECT 'Mantenimiento completado exitosamente' AS resultado;
 END$$
 
@@ -880,14 +880,14 @@ DO
 BEGIN
     -- Calcular el total de ventas del día y agregar a la tabla resumen_ventas_diarias
     INSERT INTO resumen_ventas_diarias (fecha, total_ventas, total_productos_vendidos)
-    SELECT CURDATE(), 
-            SUM(v.total), 
+    SELECT CURDATE(),
+            SUM(v.total),
             SUM(pv.cantidad)  -- Total de productos vendidos
     FROM venta v
     LEFT JOIN producto_venta pv ON v.id_venta = pv.id_venta_fk
     WHERE DATE(v.fecha_venta) = CURDATE()
-    ON DUPLICATE KEY UPDATE 
-        total_ventas = VALUES(total_ventas), 
+    ON DUPLICATE KEY UPDATE
+        total_ventas = VALUES(total_ventas),
         total_productos_vendidos = VALUES(total_productos_vendidos);
 END$$
 
@@ -944,10 +944,10 @@ SELECT * FROM auditoria_consistencia_datos WHERE fecha >= CURDATE();
 
 DELIMITER $$
 
-CREATE EVENT evt_send_birthday_greetings_daily 
-ON SCHEDULE EVERY 1 DAY 
-STARTS CURRENT_TIMESTAMP 
-DO 
+CREATE EVENT evt_send_birthday_greetings_daily
+ON SCHEDULE EVERY 1 DAY
+STARTS CURRENT_TIMESTAMP
+DO
 BEGIN
     -- TODAS LAS DECLARACIONES PRIMERO
     DECLARE cliente_id INT;
@@ -956,38 +956,38 @@ BEGIN
     DECLARE cupon_codigo VARCHAR(50);
     DECLARE descuento DECIMAL(10,2);
     DECLARE done INT DEFAULT 0;
-    
+
     -- Declarar el CURSOR después de las variables
-    DECLARE cur CURSOR FOR 
+    DECLARE cur CURSOR FOR
         SELECT id_cliente, email, nombre
         FROM cliente
         WHERE DATE(fecha_nacimiento) = CURDATE();
-    
+
     -- Declarar el HANDLER al final de todas las declaraciones
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
-    
+
     -- AHORA SÍ LAS INSTRUCCIONES EJECUTABLES
     SET descuento = 10.00;
-    
+
     -- Abrir el cursor y asignar cupones de cumpleaños
     OPEN cur;
-    
+
     read_loop: LOOP
         FETCH cur INTO cliente_id, cliente_email, cliente_nombre;
-        
+
         IF done THEN
             LEAVE read_loop;
         END IF;
-        
+
         -- Generar un código único para el cupón
         SET cupon_codigo = CONCAT('CUPON-', cliente_id, '-', DATE_FORMAT(NOW(), '%Y%m%d'));
-        
+
         -- Insertar el cupón en la tabla de cupones
         INSERT INTO cupones_cumpleanos (id_cliente_fk, codigo_cupon, descuento)
         VALUES (cliente_id, cupon_codigo, descuento);
-        
+
     END LOOP;
-    
+
     CLOSE cur;
 END$$
 
@@ -1031,7 +1031,7 @@ STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
     INSERT INTO ranking_productos (id_producto_fk, total_vendido, total_cantidad)
-    SELECT 
+    SELECT
         pv.id_producto_fk,
         SUM(pv.cantidad * pv.precio_unitario) AS total_vendido,
         SUM(pv.cantidad) AS total_cantidad
@@ -1045,7 +1045,7 @@ END$$
 DELIMITER ;
 
 --- como usarlo:
-SELECT 
+SELECT
     r.id_producto_fk,
     p.nombre AS producto,
     r.total_cantidad,
@@ -1066,7 +1066,7 @@ STARTS CURRENT_TIMESTAMP
 DO
 BEGIN
     -- Copias de seguridad de las tablas críticas en tablas con sufijo "_backup"
-    
+
     -- Respaldar tabla cliente
     CREATE TABLE IF NOT EXISTS cliente_backup AS
     SELECT * FROM cliente;
@@ -1095,7 +1095,7 @@ END$$
 
 DELIMITER ;
 
---- como usarlo: 
+--- como usarlo:
 
 SHOW TABLES LIKE '%backup%';
 
@@ -1118,7 +1118,7 @@ END$$
 
 DELIMITER ;
 
---- para usarlo: 
+--- para usarlo:
 INSERT INTO carrito (id_carrito, id_producto_fk, id_cliente_fk, cantidad, fecha_creacion, fecha_actualizacion, estado)
 VALUES
     (1001, 5, 2, 1, NOW(), NOW(), 'abandonado'),
@@ -1199,12 +1199,12 @@ ON SCHEDULE
     STARTS CURRENT_TIMESTAMP + INTERVAL 1 DAY
 DO
 BEGIN
-    -- Actualizar vistas materializadas (simuladas con tablas)
 
-    -- Refrescar resumen de ventas
+
+
     TRUNCATE TABLE mv_resumen_ventas;
     INSERT INTO mv_resumen_ventas
-    SELECT * FROM qry_ResumenVentas;  -- o la consulta base que alimenta la vista
+    SELECT * FROM qry_ResumenVentas;  
 
     -- Refrescar top productos
     TRUNCATE TABLE mv_top_productos;
