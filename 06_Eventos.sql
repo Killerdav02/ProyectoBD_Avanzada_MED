@@ -45,6 +45,7 @@ SELECT * FROM reporte_ventas_semanal ORDER BY fecha_reporte DESC;
 
 -- 2. evt_cleanup_temp_tables_daily: Borra tablas temporales diariamente.DROP EVENT IF EXISTS evt_cleanup_temp_tables_daily;
 
+DROP EVENT IF EXISTS evt_cleanup_temp_tables_daily;
 DELIMITER $$
 CREATE EVENT evt_cleanup_temp_tables_daily
 ON SCHEDULE EVERY 2 MINUTE
@@ -265,6 +266,10 @@ BEGIN
 END$$
 DELIMITER ;
 
+UPDATE descuento
+SET fecha_fin ='2025-05-01'
+WHERE id_descuento = 4;
+
 -- =====================================================
 -- VERIFICACIÓN: Comprobar que el evento está activo
 -- =====================================================
@@ -291,7 +296,7 @@ AND EVENT_NAME = 'evt_deactivate_expired_promotions_hourly';
 
 -- Agregar campo activo si no existe
 ALTER TABLE descuento
-ADD COLUMN IF NOT EXISTS activo TINYINT DEFAULT 1;
+ADD COLUMN activo TINYINT DEFAULT 1;
 
 -- Verificar estructura de la tabla
 DESC descuento;
@@ -306,20 +311,20 @@ DELETE FROM descuento WHERE tipo IN ('producto', 'categoria') AND id_descuento >
 -- Insertar descuentos EXPIRADOS (serán desactivados automáticamente)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
 VALUES
-(2, 'producto', 15.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 1),
-(3, 'categoria', 20.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 1),
-(4, 'producto', 10.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 1);
+(5, 'producto', 15.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 10 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), 1),
+(6, 'categoria', 20.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), 1),
+(7, 'producto', 10.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), 1);
 
 -- Insertar descuentos VIGENTES (permanecerán activos)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
 VALUES
-(5, 'categoria', 25.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1),
-(6, 'producto', 30.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 15 DAY), 1);
+(8, 'categoria', 25.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 1),
+(9, 'producto', 30.00, 'porcentaje', NOW(), DATE_ADD(NOW(), INTERVAL 15 DAY), 1);
 
 -- Insertar descuento que EXPIRA EN 10 SEGUNDOS (para ver la desactivación en tiempo real)
 INSERT INTO descuento (id_descuento, tipo, valor, nombre, fecha_inicio, fecha_fin, activo)
 VALUES
-(7, 'cumpleaños', 5.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 10 SECOND), 1);
+(10, 'cumpleaños', 5.00, 'porcentaje', DATE_SUB(NOW(), INTERVAL 1 DAY), DATE_ADD(NOW(), INTERVAL 10 SECOND), 1);
 
 -- =====================================================
 -- ANTES: Ver descuentos ANTES de la desactivación automática
@@ -345,33 +350,21 @@ SELECT
     DATE_FORMAT(fecha_inicio, '%Y-%m-%d %H:%i:%s') as inicio,
     DATE_FORMAT(fecha_fin, '%Y-%m-%d %H:%i:%s') as fin,
     CASE
-        WHEN fecha_fin < NOW() THEN '⏰ EXPIRADO'
-        WHEN fecha_fin > NOW() THEN '✅ VIGENTE'
+        WHEN fecha_fin < NOW() THEN ' EXPIRADO'
+        WHEN fecha_fin > NOW() THEN ' VIGENTE'
     END as estado_fecha,
     CASE
-        WHEN activo = 1 THEN '🟢 Activo'
-        ELSE '🔴 Inactivo'
+        WHEN activo = 1 THEN ' Activo'
+        ELSE ' Inactivo'
     END as estado_sistema,
     CASE
-        WHEN fecha_fin < NOW() AND activo = 1 THEN '⚠️ Será desactivado en 1 minuto'
-        WHEN fecha_fin > NOW() AND activo = 1 THEN '✓ Permanecerá activo'
+        WHEN fecha_fin < NOW() AND activo = 1 THEN ' Será desactivado en 1 minuto'
+        WHEN fecha_fin > NOW() AND activo = 1 THEN ' Permanecerá activo'
         ELSE '- Ya está inactivo'
     END as accion_pendiente,
     TIMESTAMPDIFF(SECOND, NOW(), fecha_fin) as 'segundos_para_expirar'
 FROM descuento
 ORDER BY fecha_fin;
-
--- Descuentos que serán desactivados
-SELECT
-    '⏳ Estos descuentos serán desactivados AUTOMÁTICAMENTE en 1 minuto' as info,
-    id_descuento,
-    tipo,
-    CONCAT(valor, '%') as descuento,
-    DATE_FORMAT(fecha_fin, '%Y-%m-%d %H:%i:%s') as 'expiró_en',
-    CONCAT(TIMESTAMPDIFF(DAY, fecha_fin, NOW()), ' días atrás') as 'hace_cuanto'
-FROM descuento
-WHERE fecha_fin < NOW()
-AND activo = 1;
 
 
 -- 5. evt_recalculate_customer_loyalty_tiers_nightly: Recalcula niveles de lealtad cada noche.
@@ -400,19 +393,19 @@ BEGIN
                   FROM venta v
                   WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 5000000
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 500000
             THEN 'oro'
             WHEN (SELECT COALESCE(SUM(v.total), 0)
                   FROM venta v
                   WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 2000000
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 200000
             THEN 'plata'
             WHEN (SELECT COALESCE(SUM(v.total), 0)
                   FROM venta v
                   WHERE v.id_cliente_fk = c.id_cliente
                   AND v.estado = 'Entregado'
-                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 500000
+                  AND v.fecha_venta >= DATE_SUB(NOW(), INTERVAL 1 YEAR)) >= 50000
             THEN 'bronce'
             ELSE NULL
         END,
@@ -489,8 +482,8 @@ VALUES
 -- Cliente 2: Ventas para nivel PLATA (> 2,000,000)
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
 VALUES
-(DATE_SUB(NOW(), INTERVAL 1 MONTH), 'Entregado', 1200000.00, 2, 1, 1, 2),
-(DATE_SUB(NOW(), INTERVAL 5 MONTH), 'Entregado', 900000.00, 2, 1, 1, 2);
+(DATE_SUB(NOW(), INTERVAL 2 MONTH), 'Entregado', 1200000.00, 14, 1, 1, 2),
+(DATE_SUB(NOW(), INTERVAL 2 MONTH), 'Entregado', 900000.00, 15, 1, 1, 2);
 
 -- Cliente 3: Ventas para nivel BRONCE (> 500,000)
 INSERT INTO venta (fecha_venta, estado, total, id_cliente_fk, id_tienda_fk, id_descuento_fk, id_tarifa_envio_fk)
@@ -1057,6 +1050,7 @@ ORDER BY r.total_vendido DESC;
 
 
 -- 13. evt_backup_critical_tables_daily: Realiza backup de tablas críticas.
+DROP EVENT evt_backup_critical_tables_daily;
 
 DELIMITER $$
 

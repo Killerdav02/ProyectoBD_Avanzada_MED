@@ -657,6 +657,36 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`log_cleanup_temp` (
+  `id_log` INT NOT NULL AUTO_INCREMENT,
+  `fecha_limpieza` DATETIME NOT NULL,
+  `tablas_eliminadas` INT NOT NULL,
+  `descripcion` VARCHAR(255) NOT NULL,
+  PRIMARY KEY (`id_log`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`auditoria_cliente_historico` (
+  `id_auditoria` INT NOT NULL AUTO_INCREMENT,
+  `id_cliente_fk` INT NOT NULL,
+  `nombre` VARCHAR(100) NOT NULL,
+  `email` VARCHAR(100) NOT NULL,
+  `fecha_registro` DATETIME NOT NULL,
+  `fecha_archivo` DATETIME NOT NULL,
+  PRIMARY KEY (`id_auditoria`),
+  CONSTRAINT `fk_auditoria_cliente2`
+    FOREIGN KEY (`id_cliente_fk`)
+    REFERENCES `e_commerce_db`.`cliente` (`id_cliente`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
 
 
 
