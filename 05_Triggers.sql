@@ -1,5 +1,6 @@
--- Active: 1761397960283@@127.0.0.1@3309@e_commerce_db
+-- Active: 1761506796508@@127.0.0.1@3309@e_commerce_db
 -- 1. trg_audit_precio_producto_after_update: Guarda un log de cambios de precios.
+DROP TRIGGER IF EXISTS trg_audit_precio_producto_after_update;
 DELIMITER //
 
 CREATE TRIGGER trg_audit_precio_producto_after_update
@@ -153,8 +154,9 @@ BEGIN
 
     -- Contamos cuántos productos pertenecen a la categoría que se intenta eliminar
     SELECT COUNT(*) INTO productos_asociados
-    FROM producto
+    FROM producto_categoria
     WHERE id_categoria_fk = OLD.id_categoria;
+
 
     -- Si hay productos asociados, bloqueamos la eliminación
     IF productos_asociados > 0 THEN
@@ -209,14 +211,14 @@ END //
 
 DELIMITER ;
 
---2️⃣ Insertar un nuevo cliente (para probar el trigger)--
+--2️ Insertar un nuevo cliente (para probar el trigger)--
 
 INSERT INTO cliente
 (nombre, apellido, email, clave, fecha_nacimiento, estado, membresia, puntos)
 VALUES
 ('Juan', 'Perez', 'juan.perez@email.com', '12345', '1990-05-15', 'activo', 'oro', 0);
 
----3️⃣ Verificar que se registró en la auditoría---ç
+---3️ Verificar que se registró en la auditoría---ç
 
 SELECT *
 FROM auditoria_cliente
@@ -264,6 +266,7 @@ FOR EACH ROW
 BEGIN
     SET NEW.fecha_modificacion = NOW();
 END //
+
 
 DELIMITER ;
 ----/Insertar un nuevo producto---
@@ -506,7 +509,7 @@ FOR EACH ROW
 BEGIN
     DECLARE umbral INT DEFAULT 10;
 
-    -- Solo actuar si el stock disminuyó
+    -- Solo actuar si el stock disminuyó y está por debajo del umbral
     IF NEW.stock < OLD.stock AND NEW.stock <= umbral THEN
 
         -- Insertar alerta solo si no existe una alerta pendiente para este inventario
@@ -514,7 +517,7 @@ BEGIN
             SELECT 1
             FROM alerta_stock
             WHERE id_inventario_fk = NEW.id_inventario
-            7-13AND estado = 'pendiente'
+              AND estado = 'pendiente'
         ) THEN
             INSERT INTO `e_commerce_db`.`alerta_stock` (
                 id_inventario_fk,
@@ -535,6 +538,11 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+UPDATE inventario
+SET stock = 3
+WHERE id_inventario = 50;
 
 SELECT
     i.id_inventario,
@@ -572,27 +580,26 @@ DROP TRIGGER IF EXISTS trg_archive_deleted_venta;
 DELIMITER //
 
 CREATE TRIGGER trg_archive_deleted_venta
-BEFORE UPDATE ON venta
+AFTER UPDATE ON venta
 FOR EACH ROW
 BEGIN
-    IF (NEW.estado = 'Enviado' OR NEW.estado = 'Entregado') THEN
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'YA CUANDO EL PROCESO DE ESTADO ES ENVIADO Y ENTREGADO NO SE PUEDE CANCELAR';
-    ELSEIF (NEW.estado = 'Pendiente' OR NEW.estado = 'Procesando') THEN
-        SET @mensaje := 'Estado actualizado correctamente.';
-    ELSEIF (NEW.estado = 'Cancelado') THEN
+    -- Solo actuar si se cambia el campo 'estado' y es Cancelado
+    IF NEW.estado <> OLD.estado AND NEW.estado = 'Cancelado' THEN
         INSERT INTO venta_eliminada (id_venta_fk, fecha_eliminacion, motivo)
         VALUES (OLD.id_venta, NOW(), 'CLIENTE CANCELO SU PEDIDO');
-        SIGNAL SQLSTATE '45000'
-        SET MESSAGE_TEXT = 'SU VENTA FUE CANCELADA';
     END IF;
 END;
 //
 DELIMITER ;
 
+
 UPDATE venta
-SET estado = 'Procesando'
-WHERE id_venta = 1;
+SET estado = 'Cancelado'
+WHERE id_venta = 5;
+
+UPDATE producto_venta
+SET cantidad = 10
+WHERE id_producto_fk = 20 AND id_venta_fk = 4;
 
 
 -- 15. trg_validate_email_format_on_customer: Valida el formato del correo electrónico del cliente.
@@ -604,7 +611,7 @@ CREATE TRIGGER trg_validate_email_format_on_customer
 BEFORE INSERT ON cliente
 FOR EACH ROW
 BEGIN
-    IF NEW.email NOT REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$' THEN
+    IF NEW.email COLLATE utf8mb4_bin NOT REGEXP '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$' THEN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'EL CORREO QUE INGRESAS NO ES VALIDO';
     END IF;
@@ -620,7 +627,27 @@ INSERT INTO
         fecha_registro,
         fecha_nacimiento
     )
-VALUES ("maicoll", "mendez","","123456",NOW(),"2025-04-25");
+VALUES ("maicoll", "mendez","maicolLmendez@example.com","Mendez15.",NOW(),"2025-04-25");
+
+DROP TRIGGER IF EXISTS trg_validate_email_format_on_customer_actualizar;
+
+DELIMITER //
+
+CREATE TRIGGER trg_validate_email_format_on_customer_actualizar
+BEFORE UPDATE ON cliente
+FOR EACH ROW
+BEGIN
+    IF NEW.email COLLATE utf8mb4_bin NOT REGEXP '^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'EL CORREO QUE INGRESAS NO ES VALIDO';
+    END IF;
+END //
+
+DELIMITER ;
+
+UPDATE cliente
+set email = "maicollmendez@example.com"
+WHERE id_cliente = 21;
 
 -- 16. trg_update_last_order_date_customer: Actualiza la fecha del último pedido del cliente.
 
@@ -656,6 +683,7 @@ BEGIN
         SIGNAL SQLSTATE '45000'
         SET MESSAGE_TEXT = 'Un cliente no puede referirse a sí mismo.';
     END IF;
+END;//
 DELIMITER ;
 
 
@@ -699,9 +727,6 @@ DELIMITER ;
 
 DROP TRIGGER IF EXISTS trg_assign_default_category_on_null;
 
-ALTER TABLE categoria
-MODIFY COLUMN nombre ENUM('Calzado', 'Ropa', 'Electronico', 'Hogar', 'Pendiente') NOT NULL;
-
 DELIMITER //
 CREATE TRIGGER trg_assign_default_category_on_null
 AFTER INSERT ON producto
@@ -722,6 +747,9 @@ BEGIN
 END //
 DELIMITER ;
 
+
+
+
 INSERT INTO
     `e_commerce_db`.`producto` (
         nombre,
@@ -732,7 +760,7 @@ INSERT INTO
         peso
     )
 VALUES (
-        'Zapatos adidas',
+        'Zapatos paseo',
         'Zapatos cómodos para deportes y actividades al aire libre',
         180000.00,
         NULL,
@@ -740,7 +768,9 @@ VALUES (
         1
     );
 
--- 20. trg_update_producto_count_in_categoria: Mantiene un contador de productos por categoría.
+UPDATE categoria
+SET nombre = "Pendiente"
+WHERE id_categoria = 5;-- 20. trg_update_producto_count_in_categoria: Mantiene un contador de productos por categoría.
 
 
 DROP TRIGGER IF EXISTS trg_actualizar_categoria_stock;
@@ -767,8 +797,168 @@ DELIMITER ;
 
 INSERT INTO `e_commerce_db`.`producto_venta` (`id_producto_fk`, `id_venta_fk`, `cantidad`, `precio_unitario`, `id_moneda_fk`)
 VALUES
-(11, 5, 2, 10000.00, 1),
-(7, 5, 3, 15000.00, 1),
-(44, 5, 3, 15000.00, 1),
-(37, 5, 3, 15000.00, 1);
+(1, 5, 2, 10000.00, 1),
+(2, 8, 3, 15000.00, 1),
+(3, 5, 3, 15000.00, 1),
+(4, 5, 3, 15000.00, 1);
+
+-- 21. trg_validar_clave: Verifica que la contraseña cumpla los requisitos de seguridad.
+
+DROP TRIGGER IF EXISTS trg_validar_clave;
+
+DELIMITER //
+
+CREATE TRIGGER trg_validar_clave
+BEFORE INSERT ON cliente
+FOR EACH ROW
+BEGIN
+    IF fn_ValidarClave(NEW.clave) = FALSE THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'La contraseña no cumple con los requisitos de seguridad: ';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- 22. trg_calcular_precio_iva_producto: para validar el prcio final  dependiendo su categoria
+
+DROP TRIGGER IF EXISTS trg_calcular_precio_iva_producto_categoria;
+DELIMITER //
+
+CREATE TRIGGER trg_calcular_precio_iva_producto_categoria
+AFTER INSERT ON producto_categoria
+FOR EACH ROW
+BEGIN
+    CALL sp_CalcularYActualizarPrecioIVA(NEW.id_producto_fk, NEW.id_categoria_fk);
+END //
+
+DELIMITER ;
+
+-- 23. trg_actualizar_precios_por_cambio_iva: Recalcula precios de productos al cambiar el IVA de una categoría.
+
+DROP TRIGGER IF EXISTS trg_actualizar_precios_por_cambio_iva;
+
+DELIMITER //
+
+CREATE TRIGGER trg_actualizar_precios_por_cambio_iva
+AFTER UPDATE ON categoria
+FOR EACH ROW
+BEGIN
+    IF NEW.iva <> OLD.iva THEN
+        UPDATE producto p
+        JOIN producto_categoria pc ON p.id_producto = pc.id_producto_fk
+        SET p.precio_iva = p.precio + (p.precio * (NEW.iva / 100))
+        WHERE pc.id_categoria_fk = NEW.id_categoria;
+    END IF;
+END //
+
+UPDATE categoria
+SET iva = 20
+WHERE id_categoria = 2;
+
+
+DELIMITER ;
+
+-- 24. trg_recalcular_precio_producto: Recalcula el precio con IVA al actualizar el precio base del producto.
+
+DELIMITER //
+
+DELIMITER //
+
+DROP TRIGGER IF EXISTS trg_actualizar_precio_iva_producto;
+
+CREATE TRIGGER trg_actualizar_precio_iva_producto
+BEFORE UPDATE ON producto
+FOR EACH ROW
+BEGIN
+    DECLARE v_id_categoria INT;
+
+    -- Buscar la categoría asociada al producto
+    SELECT id_categoria_fk
+    INTO v_id_categoria
+    FROM producto_categoria
+    WHERE id_producto_fk = NEW.id_producto;
+
+    -- Calcular el nuevo precio con IVA
+    SET NEW.precio_iva = fn_CalcularPrecioIVA(NEW.precio, v_id_categoria);
+END //
+
+DELIMITER ;
+
+
+UPDATE producto
+SET precio = 200000
+WHERE id_producto = 1;
+
+DELETE FROM categoria
+WHERE id_categoria = 1;
+
+--- 25 actualiza esto cuando se modifica cantidad
+DROP TRIGGER IF EXISTS trg_update_stock_after_update_venta;
+
+DELIMITER //
+
+CREATE TRIGGER trg_update_stock_after_update_venta
+AFTER UPDATE ON producto_venta
+FOR EACH ROW
+BEGIN
+    -- Declarar variables al inicio
+    DECLARE diferencia INT;
+    DECLARE stock_actual INT;
+
+    -- Solo ajustar stock si la cantidad cambió
+    IF NEW.cantidad <> OLD.cantidad THEN
+        -- Calcular la diferencia
+        SET diferencia = NEW.cantidad - OLD.cantidad;
+
+        -- Actualizar stock
+        UPDATE inventario
+        SET stock = stock - diferencia
+        WHERE id_producto_fk = NEW.id_producto_fk;
+
+        -- Obtener stock actualizado
+        SELECT stock INTO stock_actual
+        FROM inventario
+        WHERE id_producto_fk = NEW.id_producto_fk;
+
+        -- Prevenir stock negativo
+        IF stock_actual < 0 THEN
+            SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Stock insuficiente después de actualizar la venta';
+        END IF;
+    END IF;
+END //
+
+DELIMITER ;
+
+
+--- 26  trg_actualizar_categoria_stock_update:actualiza esto cuando  se modifica producto venta
+DROP TRIGGER IF EXISTS trg_actualizar_categoria_stock_update;
+
+DELIMITER //
+
+CREATE TRIGGER trg_actualizar_categoria_stock_update
+AFTER UPDATE ON producto_venta
+FOR EACH ROW
+BEGIN
+    -- Solo actuar si la cantidad cambió
+    IF NEW.cantidad <> OLD.cantidad THEN
+        UPDATE categoria c
+        JOIN producto_categoria pc ON c.id_categoria = pc.id_categoria_fk
+        JOIN inventario i ON pc.id_producto_fk = i.id_producto_fk
+        SET c.cantidad = (
+            SELECT SUM(i2.stock)
+            FROM producto_categoria pc2
+            JOIN inventario i2 ON pc2.id_producto_fk = i2.id_producto_fk
+            WHERE pc2.id_categoria_fk = c.id_categoria
+        )
+        WHERE pc.id_producto_fk = NEW.id_producto_fk;
+    END IF;
+END //
+
+DELIMITER ;
+UPDATE producto_venta
+SET cantidad = 20
+WHERE id_producto_fk = 20 AND id_venta_fk = 4
+
 
