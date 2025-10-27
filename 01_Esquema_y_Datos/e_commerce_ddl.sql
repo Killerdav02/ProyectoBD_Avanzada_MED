@@ -56,6 +56,7 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`producto` (
   `precio_iva` DECIMAL(10,2) NULL DEFAULT NULL,
   `activo` TINYINT NULL DEFAULT NULL,
   `peso` DECIMAL(10,2) NULL DEFAULT NULL,
+  `fecha_modificacion`  DATETIME NULL,
   PRIMARY KEY (`id_producto`),
   UNIQUE INDEX `nombre` (`nombre` ASC) VISIBLE)
 ENGINE = InnoDB
@@ -95,8 +96,9 @@ COLLATE = utf8mb4_0900_ai_ci;
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`categoria` (
   `id_categoria` INT NOT NULL AUTO_INCREMENT,
   `descripcion` TEXT NOT NULL,
-  `nombre` ENUM('Calzado', 'Ropa', 'Electronico', 'Hogar') NOT NULL,
-  `iva` DECIMAL(5,2) NULL DEFAULT NULL,
+  `nombre` ENUM('Calzado', 'Ropa', 'Electronico', 'Hogar') NULL,
+  `iva` DECIMAL(5,2) NULL DEFAULT 0.00,
+  `cantidad` INT,
   PRIMARY KEY (`id_categoria`),
   UNIQUE INDEX `nombre_UNIQUE` (`nombre` ASC) VISIBLE)
 ENGINE = InnoDB
@@ -144,7 +146,7 @@ COLLATE = utf8mb4_0900_ai_ci;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `e_commerce_db`.`descuento` (
   `id_descuento` INT NOT NULL AUTO_INCREMENT,
-  `tipo` ENUM('puntos', 'cumpleaños', 'categoria', 'producto') NULL DEFAULT NULL,
+  `tipo` ENUM('puntos', 'cumpleanos', 'categoria', 'producto') NULL DEFAULT NULL,
   `valor` DECIMAL(10,2) NULL DEFAULT NULL,
   `nombre` ENUM('porcentaje') NULL DEFAULT 'porcentaje',
   `fecha_inicio` DATETIME NULL DEFAULT NULL,
@@ -614,6 +616,48 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`producto_visita` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`log_cambios_permisos` (
+  `id_log` INT NOT NULL AUTO_INCREMENT,
+  `usuario` VARCHAR(100) NOT NULL,
+  `permiso_anterior` VARCHAR(100) NOT NULL,
+  `permiso_nuevo` VARCHAR(100) NOT NULL,
+  `fecha` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id_log`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`permisos` (
+  `id_permiso` INT NOT NULL AUTO_INCREMENT,
+  `usuario` VARCHAR(100) NOT NULL,
+  `permiso` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id_permiso`)
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+CREATE TABLE IF NOT EXISTS `e_commerce_db`.`alerta_stock` (
+  `id_alerta_stock` INT NOT NULL AUTO_INCREMENT,
+  `id_inventario_fk` INT NOT NULL,
+  `stock_actual` INT NOT NULL,
+  `umbral_minimo` INT NOT NULL DEFAULT 10,
+  `fecha_alerta` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `estado` ENUM('pendiente', 'resuelto') NOT NULL DEFAULT 'pendiente',
+  PRIMARY KEY (`id_alerta_stock`),
+  INDEX `idx_inventario` (`id_inventario_fk` ASC),
+  CONSTRAINT `fk_alerta_inventario` FOREIGN KEY (`id_inventario_fk`)
+      REFERENCES `inventario` (`id_inventario`)
+      ON DELETE CASCADE
+      ON UPDATE CASCADE
+)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8mb4
+COLLATE = utf8mb4_0900_ai_ci;
+
+
 
 
 SET SQL_MODE=@OLD_SQL_MODE;

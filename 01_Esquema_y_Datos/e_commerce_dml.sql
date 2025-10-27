@@ -4,7 +4,7 @@ INSERT INTO
 VALUES (
         'Calzado deportivo y casual para hombres, mujeres y niños',
         'Calzado',
-        NULL
+        0.00
     );
 
 INSERT INTO
@@ -31,6 +31,15 @@ VALUES (
         5.00
     );
 
+INSERT INTO
+    categoria (descripcion, iva)
+VALUES (
+        'Artículos para el hogar, cocina y decoración',
+        8.00
+    );
+
+ALTER TABLE categoria
+MODIFY COLUMN `nombre` enum('Calzado','Ropa','Electronico','Hogar','Pendiente');
 --- insercion de cliente
 INSERT INTO
     cliente (
@@ -44,164 +53,181 @@ INSERT INTO
 VALUES (
         'Sofía',
         'Torres',
-        'sofía.torres@example.com',
-        'password1',
+        'sofiatorres@example.com',
+        'password1.',
         '2024-05-12',
         '1981-02-23'
     ),
     (
         'Raquel',
         'Mendoza',
-        'raquel.mendoza@example.com',
-        'password2',
+        'raquelmendoza@example.com',
+        'password2.',
         '2023-06-05',
         '1982-10-13'
     ),
     (
         'Daniel',
         'Martínez',
-        'daniel.martínez@example.com',
-        'password3',
+        'danielmartinez@example.com',
+        'password3.',
         '2023-01-18',
         '2000-02-20'
     ),
     (
         'María',
         'Fernández',
-        'maria.fernandez@example.com',
-        'password4',
+        'mariafernandez@example.com',
+        'password4.',
         '2024-08-09',
         '1986-02-19'
     ),
     (
         'Javier',
         'Jiménez',
-        'javier.jimenez@example.com',
-        'password5',
+        'javierjimenez@example.com',
+        'password5.',
         '2023-12-04',
         '1983-08-24'
     ),
     (
         'Tomás',
         'Ramírez',
-        'tomas.ramirez@example.com',
-        'password6',
+        'tomasramirez@example.com',
+        'password6.',
         '2025-08-19',
         '1984-04-10'
     ),
     (
         'Fernando',
         'Pérez',
-        'fernando.perez@example.com',
-        'password7',
+        'fernandoperez@example.com',
+        'password7.',
         '2024-12-13',
         '1995-10-15'
     ),
     (
         'Elena',
         'Calle',
-        'elena.calle@example.com',
-        'password8',
+        'elenacalle@example.com',
+        'password8.',
         '2024-11-14',
         '1987-10-19'
     ),
     (
         'Lucía',
         'Sánchez',
-        'lucia.sanchez@example.com',
-        'password9',
+        'luciasanchez@example.com',
+        'password9.',
         '2025-10-05',
         '1988-10-19'
     ),
     (
         'Raul',
         'Morales',
-        'raul.morales@example.com',
-        'password10',
+        'raulmorales@example.com',
+        'password10.',
         '2023-12-07',
         '1998-01-25'
     ),
     (
         'Miguel',
         'Cordero',
-        'miguel.cordero@example.com',
-        'password11',
+        'miguelcordero@example.com',
+        'password11.',
         '2025-05-07',
         '1993-02-27'
     ),
     (
         'Paula',
         'Fernández',
-        'paula.fernandez@example.com',
-        'password12',
+        'paulafernandez@example.com',
+        'password12.',
         '2024-02-05',
         '1997-12-19'
     ),
     (
         'Alberto',
         'Ruiz',
-        'alberto.ruiz@example.com',
-        'password13',
+        'albertoruiz@example.com',
+        'password13.',
         '2024-07-10',
         '1991-09-20'
     ),
     (
         'Pedro',
         'Sánchez',
-        'pedro.sanchez@example.com',
-        'password14',
+        'pedrosanchez@example.com',
+        'password14.',
         '2025-01-06',
         '1989-04-21'
     ),
     (
         'Marta',
         'Sánchez',
-        'marta.sanchez@example.com',
-        'password15',
+        'martasanchez@example.com',
+        'password15.',
         '2025-02-21',
         '1992-02-03'
     ),
     (
         'Carlos',
         'Vázquez',
-        'carlos.vazquez@example.com',
-        'password16',
+        'carlosvazquez@example.com',
+        'password16.',
         '2024-09-25',
         '1983-08-19'
     ),
     (
         'Javier',
         'Cordero',
-        'javier.cordero@example.com',
-        'password17',
+        'javiercordero@example.com',
+        'password17.',
         '2025-04-15',
         '1985-06-27'
     ),
     (
         'Laura',
         'Jiménez',
-        'laura.jimenez@example.com',
-        'password18',
+        'laurajimenez@example.com',
+        'password18.',
         '2025-03-04',
         '1981-03-04'
     ),
     (
         'Carlos',
         'Gómez',
-        'carlos.gomez@example.com',
-        'password19',
+        'carlosgomez@example.com',
+        'password19.',
         '2025-04-16',
         '1993-09-25'
     ),
     (
         'David',
         'Sánchez',
-        'david.sanchez@example.com',
-        'password20',
+        'davidsanchez@example.com',
+        'password20.',
         '2024-04-02',
         '1986-12-01'
     );
 
+INSERT INTO
+    cliente (
+        nombre,
+        apellido,
+        email,
+        clave,
+        fecha_registro,
+        fecha_nacimiento
+    )
+VALUES (
+        'maicoll',
+        'mendez',
+        'maicollmendez@example.com',
+        'password1.',
+        '2024-09-12',
+        '1981-02-23'
+    );
 --- insercion de direcciones
 INSERT INTO
     `e_commerce_db`.`direccion_envio` (ciudad, barrio, calle, tipo)
@@ -305,26 +331,26 @@ INSERT INTO
         id_cliente_fk,
         id_direccion_envio_fk
     )
-VALUES (1, 5),
-    (2, 7),
-    (3, 10),
-    (4, 3),
-    (5, 2),
-    (6, 1),
-    (7, 1),
-    (8, 2),
-    (9, 2),
-    (10, 3),
-    (11, 3),
-    (12, 4),
-    (13, 4),
-    (14, 5),
-    (15, 5),
-    (16, 6),
-    (17, 6),
-    (18, 7),
-    (19, 7),
-    (20, 8);
+VALUES (1, 1),
+    (2, 2),
+    (3, 3),
+    (4, 4),
+    (5, 5),
+    (6, 6),
+    (7, 7),
+    (8, 8),
+    (9, 9),
+    (10, 10),
+    (11, 11),
+    (12, 12),
+    (13, 13),
+    (14, 14),
+    (15, 15),
+    (16, 1),
+    (17, 2),
+    (18, 3),
+    (19, 4),
+    (20, 5);
 
 --- insercion producto
 
@@ -1071,7 +1097,7 @@ VALUES (1, 1),
     (7, 2),
     (8, 2),
     (9, 2),
-    (10, 2),
+    (10, 1),
     (11, 2),
     (12, 2),
     (13, 2),
@@ -1164,13 +1190,12 @@ VALUES
 
 --- insert descuento
 
-INSERT INTO `e_commerce_db`.`descuento` 
-    (`id_descuento`, `tipo`, `valor`, `nombre`)
+INSERT INTO descuento (id_descuento, tipo, valor, nombre)
 VALUES
-    (1, 'puntos', 0.10, 'porcentaje'),
-    (2, 'cumpleaños', 0.10, 'porcentaje'),
-    (3, 'categoria', 0.10, 'porcentaje'),
-    (4, 'producto', 0.10, 'porcentaje');
+(1, 'puntos', 0.10, 'porcentaje'),
+(2, 'cumpleanos', 0.10, 'porcentaje'),
+(3, 'categoria', 0.10, 'porcentaje'),
+(4, 'producto', 0.10, 'porcentaje');
 
 --- insert venta
 
@@ -1192,6 +1217,7 @@ VALUES
 (NOW(), 'Procesando', 40000.00, 14, 1, 1, 1),
 (NOW(), 'Pendiente', 38000.00, 15, 1, 1, 1);
 
+ALTER TABLE venta AUTO_INCREMENT = 1;
 
 --- insert producto_venta
 
@@ -1219,15 +1245,12 @@ VALUES
 
 (15, 6, 1, 30000.00, 1),
 (16, 6, 1, 18000.00, 1),
-(17, 6, 2, 8500.00, 1),
 
 (15, 7, 1, 30000.00, 1),
 (16, 7, 2, 18000.00, 1),
-(17, 7, 1, 8500.00, 1),
 
 (15, 8, 1, 30000.00, 1),
 (16, 8, 1, 18000.00, 1),
-(17, 8, 1, 8500.00, 1),
 (33, 8, 3, 3833.33, 1),
 
 (15, 9, 1, 30000.00, 1),

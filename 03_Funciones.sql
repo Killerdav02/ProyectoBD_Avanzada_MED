@@ -148,7 +148,7 @@ SELECT fn_FormatearNombreCompleto(1) AS nombre_completo;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_EsClienteNuevo()
+CREATE OR FUNCTION fn_EsClienteNuevo()
 RETURNS BOOLEAN
 DETERMINISTIC
 BEGIN
@@ -168,7 +168,7 @@ SELECT fn_EsClienteNuevo(1) AS es_cliente_nuevo;
 
 DELIMITER $$
 
-CREATE FUNCTION `calcular_costo_envio`(id_venta INT) 
+CREATE FUNCTION `calcular_costo_envio`(id_venta INT)
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
@@ -208,18 +208,18 @@ BEGIN
     DECLARE total_venta DECIMAL(12,2);
     DECLARE descuento DECIMAL(10,2);
     DECLARE total_con_descuento DECIMAL(12,2);
-    
+
     SELECT total INTO total_venta
     FROM venta
     WHERE id_venta = p_id_venta;
-    
+
     SELECT valor INTO descuento
     FROM descuento
     WHERE id_descuento = p_id_descuento;
-    
+
     -- Calcular el total con el descuento (asumiendo descuento como porcentaje)
     SET total_con_descuento = total_venta * (1 - (descuento / 100));
-    
+
     -- Devolver el total con descuento
     RETURN total_con_descuento;
 END$$
@@ -273,8 +273,8 @@ DETERMINISTIC
 NO SQL
 BEGIN
     DECLARE es_valido BOOLEAN DEFAULT FALSE;
-    
-    IF p_email IS NOT NULL 
+
+    IF p_email IS NOT NULL
         AND p_email != ''
         AND p_email REGEXP '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$'
         AND LOCATE('@', p_email) > 0
@@ -284,7 +284,7 @@ BEGIN
     THEN
         SET es_valido = TRUE;
     END IF;
-    
+
     RETURN es_valido;
 END$$
 
@@ -366,21 +366,19 @@ SELECT dias_desde_ultima_compra(2) AS dias_desde_ultima_compra;
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_DeterminarEstadoLealtad(p_id_cliente INT)
+CREATE FUNCTION fn_DeterminarEstadoLealtad(p_id_cliente INT)
 RETURNS VARCHAR(20)
 DETERMINISTIC
 BEGIN
     DECLARE total_gasto_mes DECIMAL(10,2);
     DECLARE estado VARCHAR(20);
 
-    -- Calcula el gasto total del cliente en el último mes
     SELECT IFNULL(SUM(total), 0)
     INTO total_gasto_mes
     FROM venta
     WHERE id_cliente_fk = p_id_cliente
       AND fecha_venta >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH);
 
-    -- Asigna el estado según el gasto del último mes
     IF total_gasto_mes < 50000 THEN
         SET estado = 'Bronce';
     ELSEIF total_gasto_mes BETWEEN 50000 AND 200000 THEN
@@ -396,7 +394,7 @@ DELIMITER ;
 
 DELIMITER //
 
-CREATE OR REPLACE PROCEDURE sp_ActualizarMembresias()
+CREATE PROCEDURE sp_ActualizarMembresias()
 BEGIN
     UPDATE cliente
     SET membresia = fn_DeterminarEstadoLealtad(id_cliente);
@@ -498,7 +496,7 @@ VALUES (
 
 DELIMITER //
 
-CREATE OR REPLACE FUNCTION fn_CalcularIVA(p_id_producto INT)
+CREATE FUNCTION fn_CalcularIVA(p_id_producto INT)
 RETURNS DECIMAL(10,2)
 DETERMINISTIC
 BEGIN
@@ -622,9 +620,11 @@ FROM producto_venta pv;
 
 -- 20. fn_ValidarComplejidadContraseña: Verifica si la contraseña cumple con criterios de seguridad.
 
+DROP FUNCTION IF EXISTS fn_ValidarClave;
+
 DELIMITER //
 
-CREATE FUNCTION fn_ValidarComplejidadContraseña(p_clave VARCHAR(255))
+CREATE FUNCTION fn_ValidarClave(p_clave VARCHAR(255))
 RETURNS BOOLEAN
 DETERMINISTIC
 BEGIN
@@ -638,5 +638,31 @@ END //
 
 DELIMITER ;
 
-SELECT fn_ValidarComplejidadContraseña('MiClave123!');
+SELECT fn_ValidarClave('MiClave123!');
+
+
+DROP FUNCTION IF EXISTS fn_CalcularPrecioIVA;
+
+--- 21. fn_CalcularPrecioIVA: Calcula valor iva cuando ingrese un dato
+
+DELIMITER //
+
+CREATE FUNCTION fn_CalcularPrecioIVA(p_precio_base DECIMAL(10,2), p_id_categoria INT)
+RETURNS DECIMAL(10,2)
+DETERMINISTIC
+BEGIN
+    DECLARE v_iva DECIMAL(5,2);
+    DECLARE v_precio_final DECIMAL(10,2);
+
+    SELECT iva INTO v_iva
+    FROM categoria
+    WHERE id_categoria = p_id_categoria;
+
+    SET v_precio_final = p_precio_base + (p_precio_base * (v_iva / 100));
+
+    RETURN v_precio_final;
+END //
+
+DELIMITER ;
+
 

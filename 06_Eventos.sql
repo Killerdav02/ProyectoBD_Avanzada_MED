@@ -1129,16 +1129,6 @@ SELECT * FROM carrito WHERE id_carrito = 1001;
 
 -- 15. evt_calculate_monthly_kpis: Calcula KPIs mensuales.
 
-CREATE TABLE KPIs (
-    id_kpi INT AUTO_INCREMENT PRIMARY KEY,
-    mes INT NOT NULL,
-    año INT NOT NULL,
-    total_venta DECIMAL(12,2) DEFAULT 0,
-    cliente_nuevo INT DEFAULT 0,
-    producto_vendido VARCHAR(255),
-    fecha_calculo DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
 
 DROP EVENT IF EXISTS evt_calculate_monthly_kpis;
 
@@ -1204,7 +1194,7 @@ BEGIN
 
     TRUNCATE TABLE mv_resumen_ventas;
     INSERT INTO mv_resumen_ventas
-    SELECT * FROM qry_ResumenVentas;  
+    SELECT * FROM qry_ResumenVentas;
 
     -- Refrescar top productos
     TRUNCATE TABLE mv_top_productos;
@@ -1221,13 +1211,6 @@ DELIMITER ;
 
 
 -- 17. evt_log_database_size_weekly: Registra el tamaño de la base de datos.
-
-CREATE TABLE IF NOT EXISTS historial_tamano_bd (
-    id_registro INT AUTO_INCREMENT PRIMARY KEY,
-    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
-    nombre_bd VARCHAR(100),
-    tamano_mb DECIMAL(10,2)
-);
 
 SET GLOBAL event_scheduler = ON;
 SHOW VARIABLES LIKE 'event_scheduler';
@@ -1256,15 +1239,6 @@ DELIMITER ;
 
 -- 18. evt_detect_fraudulent_activity_hourly: Detecta actividad sospechosa.
 
-CREATE TABLE IF NOT EXISTS historial_fraude (
-    id_fraude INT AUTO_INCREMENT PRIMARY KEY,
-    id_cliente INT,
-    total_compras INT,
-    fecha_detectado DATETIME DEFAULT CURRENT_TIMESTAMP,
-    motivo TEXT
-);
-
-
 DROP EVENT IF EXISTS evt_detect_fraudulent_activity_daily;
 
 DELIMITER //
@@ -1292,16 +1266,6 @@ DELIMITER ;
 
 -- 19. evt_generate_supplier_performance_report_monthly: Genera reporte de proveedores.
 
-CREATE TABLE IF NOT EXISTS reporte_proveedores (
-    id_reporte INT AUTO_INCREMENT PRIMARY KEY,
-    id_proveedor INT,
-    mes INT,
-    anio INT,
-    total_productos_entregados INT,
-    total_ventas DECIMAL(12,2),
-    promedio_precio DECIMAL(12,2),
-    fecha_generacion DATETIME DEFAULT CURRENT_TIMESTAMP
-);
 
 
 DROP EVENT IF EXISTS evt_generate_supplier_performance_report_monthly;

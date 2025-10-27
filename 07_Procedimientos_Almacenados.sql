@@ -341,8 +341,8 @@ DELIMITER ;
 --- como usarlo:
 CALL sp_AplicarDescuentoPorCategoria(3, 0.15);
 
-SELECT id_producto, nombre, precio 
-FROM producto 
+SELECT id_producto, nombre, precio
+FROM producto
 WHERE id_producto IN (
     SELECT id_producto_fk FROM producto_categoria WHERE id_categoria_fk = 3
 );
@@ -358,7 +358,7 @@ CREATE PROCEDURE sp_GenerarReporteMensualVentas (
 )
 BEGIN
 
-    SELECT 
+    SELECT
         v.id_venta,
         v.fecha_venta,
         CONCAT(c.nombre, ' ', c.apellido) AS cliente,
@@ -483,7 +483,7 @@ CREATE PROCEDURE sp_ObtenerDetallesProductoCompleto (
     IN p_id_producto INT
 )
 BEGIN
-    SELECT 
+    SELECT
         p.id_producto,
         p.nombre AS nombre_producto,
         p.descripcion,
@@ -776,4 +776,31 @@ BEGIN
     INSERT INTO producto_categoria(id_producto_fk, id_categoria_fk)
     VALUES (p_id_producto, p_id_categoria_destino);
 END //
+DELIMITER ;
+
+--- 21. ps_CalcularPrecioIVA: Calcula valor iva cuando ingrese un dato
+
+DELIMITER //
+
+CREATE PROCEDURE sp_CalcularYActualizarPrecioIVA(IN p_id_producto INT, IN p_id_categoria INT)
+BEGIN
+    DECLARE v_precio_base DECIMAL(10,2);
+    DECLARE v_iva DECIMAL(5,2);
+    DECLARE v_precio_final DECIMAL(10,2);
+
+    SELECT precio INTO v_precio_base
+    FROM producto
+    WHERE id_producto = p_id_producto;
+
+    SELECT iva INTO v_iva
+    FROM categoria
+    WHERE id_categoria = p_id_categoria;
+
+    SET v_precio_final = v_precio_base + (v_precio_base * (v_iva / 100));
+
+    UPDATE producto
+    SET precio_iva = v_precio_final
+    WHERE id_producto = p_id_producto;
+END //
+
 DELIMITER ;
