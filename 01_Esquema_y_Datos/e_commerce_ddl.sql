@@ -697,3 +697,6 @@ SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
 
 
 
+
+SELECT COUNT(*) as total_clientes FROM cliente;
+SELECT id_cliente, nombre, apellido FROM cliente;

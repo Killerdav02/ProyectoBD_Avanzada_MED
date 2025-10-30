@@ -361,7 +361,8 @@ INSERT INTO
         precio,
         precio_iva,
         activo,
-        peso
+        peso,
+        precio_costo
     )
 VALUES (
         'Zapatos deportivos',
@@ -369,7 +370,8 @@ VALUES (
         150000.00,
         NULL,
         1,
-        0.5
+        0.5,
+        20000
     ),
     (
         'Botas de lluvia',
@@ -377,7 +379,8 @@ VALUES (
         120000.00,
         NULL,
         1,
-        0.8
+        0.8,
+        20000
     ),
     (
         'Sandalias de playa',
@@ -386,6 +389,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Zapatillas de correr',
@@ -394,6 +398,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     ),
     (
         'Bermudas deportivas',
@@ -402,6 +407,7 @@ VALUES (
         NULL,
         1,
         0.4
+        20000
     ),
     (
         'Camiseta deportiva',
@@ -410,6 +416,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Pantalones deportivos',
@@ -418,6 +425,7 @@ VALUES (
         NULL,
         1,
         0.5
+        20000
     ),
     (
         'Chaqueta impermeable',
@@ -426,6 +434,7 @@ VALUES (
         NULL,
         1,
         0.7
+        20000
     ),
     (
         'Gorra deportiva',
@@ -434,6 +443,7 @@ VALUES (
         NULL,
         1,
         0.1
+        20000
     ),
     (
         'Socks de running',
@@ -442,6 +452,7 @@ VALUES (
         NULL,
         1,
         0.1
+        20000
     ),
     (
         'Camiseta básica',
@@ -450,6 +461,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Sudadera con capucha',
@@ -458,6 +470,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     ),
     (
         'Jeans rasgados',
@@ -466,6 +479,7 @@ VALUES (
         NULL,
         1,
         0.7
+        20000
     ),
     (
         'Pantalones cortos',
@@ -474,6 +488,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Bufanda de lana',
@@ -482,6 +497,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Botines de invierno',
@@ -490,6 +506,7 @@ VALUES (
         NULL,
         1,
         1.0
+        20000
     ),
     (
         'Zapatos formales',
@@ -498,6 +515,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     ),
     (
         'Botas de montaña',
@@ -506,6 +524,7 @@ VALUES (
         NULL,
         1,
         1.2
+        20000
     ),
     (
         'Mocasines de cuero',
@@ -514,6 +533,7 @@ VALUES (
         NULL,
         1,
         0.5
+        20000
     ),
     (
         'Tacones de fiesta',
@@ -522,6 +542,7 @@ VALUES (
         NULL,
         1,
         0.4
+        20000
     ),
     (
         'Zapatos de charol',
@@ -530,6 +551,7 @@ VALUES (
         NULL,
         1,
         0.5
+        20000
     ),
     (
         'Botas de combate',
@@ -538,6 +560,7 @@ VALUES (
         NULL,
         1,
         1.5
+        20000
     ),
     (
         'Alpargatas',
@@ -546,6 +569,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Zapatos de ballet',
@@ -554,6 +578,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Zapatillas de skate',
@@ -562,6 +587,7 @@ VALUES (
         NULL,
         1,
         0.7
+        20000
     ),
     (
         'Zapatillas deportivas de lujo',
@@ -570,6 +596,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     );
 
 INSERT INTO
@@ -588,6 +615,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Pantalón chino',
@@ -596,6 +624,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     ),
     (
         'Chaqueta de punto',
@@ -604,6 +633,7 @@ VALUES (
         NULL,
         1,
         0.5
+        20000
     ),
     (
         'Falda corta',
@@ -612,6 +642,7 @@ VALUES (
         NULL,
         1,
         0.4
+        20000
     ),
     (
         'Polo de manga larga',
@@ -620,6 +651,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Camiseta de tirantes',
@@ -628,6 +660,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Abrigo de paño',
@@ -636,6 +669,7 @@ VALUES (
         NULL,
         1,
         1.0
+        20000
     ),
     (
         'Pantalones de vestir',
@@ -644,6 +678,7 @@ VALUES (
         NULL,
         1,
         0.7
+        20000
     ),
     (
         'Camisa a rayas',
@@ -652,6 +687,7 @@ VALUES (
         NULL,
         1,
         0.4
+        20000
     ),
     (
         'Sudadera con logo',
@@ -660,6 +696,7 @@ VALUES (
         NULL,
         1,
         0.6
+        20000
     );
 
 INSERT INTO
@@ -670,6 +707,7 @@ INSERT INTO
         precio_iva,
         activo,
         peso
+        
     )
 VALUES (
         'Laptop gaming',
@@ -678,6 +716,7 @@ VALUES (
         NULL,
         1,
         2.5
+        20000
     ),
     (
         'Auriculares con cancelación de ruido',
@@ -686,6 +725,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Smartphone de gama media',
@@ -694,6 +734,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     ),
     (
         'Teclado mecánico RGB',
@@ -702,6 +743,7 @@ VALUES (
         NULL,
         1,
         1.0
+        20000
     ),
     (
         'Monitor ultrawide 34"',
@@ -710,6 +752,7 @@ VALUES (
         NULL,
         1,
         7.0
+        20000
     ),
     (
         'Cámara deportiva',
@@ -718,6 +761,7 @@ VALUES (
         NULL,
         1,
         0.3
+        20000
     ),
     (
         'Proyector portátil',
@@ -726,6 +770,7 @@ VALUES (
         NULL,
         1,
         0.8
+        20000
     ),
     (
         'Smart TV 55" 4K',
@@ -734,6 +779,7 @@ VALUES (
         NULL,
         1,
         10.0
+        20000
     ),
     (
         'Estación de carga inalámbrica',
@@ -742,6 +788,7 @@ VALUES (
         NULL,
         1,
         0.5
+        20000
     ),
     (
         'Laptop ultradelgada',
@@ -750,6 +797,7 @@ VALUES (
         NULL,
         1,
         1.2
+        20000
     ),
     (
         'Cámara web HD',
@@ -758,6 +806,7 @@ VALUES (
         NULL,
         1,
         0.1
+        20000
     ),
     (
         'Altavoz inteligente',
@@ -766,6 +815,7 @@ VALUES (
         NULL,
         1,
         1.0
+        20000
     ),
     (
         'Disco duro externo 2TB',
@@ -774,6 +824,7 @@ VALUES (
         NULL,
         1,
         0.7
+        20000
     ),
     (
         'Tablet 8 pulgadas',
@@ -782,6 +833,7 @@ VALUES (
         NULL,
         1,
         0.4
+        20000
     ),
     (
         'Microfono USB para PC',
@@ -790,6 +842,7 @@ VALUES (
         NULL,
         1,
         0.2
+        20000
     );
 
 INSERT INTO
@@ -808,6 +861,7 @@ VALUES (
         NULL,
         1,
         2.5
+        20000
     ),
     (
         'Ventilador de torre',
@@ -816,6 +870,7 @@ VALUES (
         NULL,
         1,
         1.5
+        20000
     ),
     (
         'Cafetera de cápsulas',
@@ -824,6 +879,7 @@ VALUES (
         NULL,
         1,
         2.0
+        20000
     ),
     (
         'Horno eléctrico',
@@ -832,6 +888,7 @@ VALUES (
         NULL,
         1,
         10.0
+        20000
     ),
     (
         'Licuadora de vaso',
@@ -840,6 +897,7 @@ VALUES (
         NULL,
         1,
         1.2
+        20000
     ),
     (
         'Refrigerador de 2 puertas',
@@ -848,6 +906,7 @@ VALUES (
         NULL,
         1,
         40.0
+        20000
     ),
     (
         'Estufa de 4 quemadores',
@@ -856,6 +915,7 @@ VALUES (
         NULL,
         1,
         10.0
+        20000
     ),
     (
         'Microondas',
@@ -864,6 +924,7 @@ VALUES (
         NULL,
         1,
         8.0
+        20000
     ),
     (
         'Plancha a vapor',
@@ -872,6 +933,7 @@ VALUES (
         NULL,
         1,
         1.0
+        20000
     ),
     (
         'Secadora de ropa',
@@ -880,6 +942,7 @@ VALUES (
         NULL,
         1,
         15.0
+        20000
     ),
     (
         'Cesta organizadora',
@@ -888,6 +951,7 @@ VALUES (
         NULL,
         1,
         2.0
+        20000
     ),
     (
         'Mesa de comedor',
@@ -896,6 +960,7 @@ VALUES (
         NULL,
         1,
         20.0
+        20000
     ),
     (
         'Silla ergonómica de oficina',
@@ -904,6 +969,7 @@ VALUES (
         NULL,
         1,
         7.0
+        20000
     ),
     (
         'Cesta de picnic',
@@ -912,6 +978,7 @@ VALUES (
         NULL,
         1,
         3.0
+        20000
     ),
     (
         'Espejo de cuerpo entero',
@@ -920,6 +987,7 @@ VALUES (
         NULL,
         1,
         7.0
+        20000
     );
 
 --- insert carrito
