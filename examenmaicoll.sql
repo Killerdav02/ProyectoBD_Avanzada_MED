@@ -17,6 +17,12 @@ BEGIN
     DECLARE rentabilidad DECIMAL(12,2);
     DECLARE valor_venta DECIMAL(12,2);
 
+     -- Calculamos la suma de cantidad * precio_unitario para la venta indicada
+    SELECT SUM(pv.cantidad * .pv.precio_unitario) INTO total
+    FROM producto_venta AS pv
+    INNER JOIN producto AS p ON pv.id_producto_fk = p.id_producto
+    WHERE producto = id_producto;
+
     -- Calculamos la suma de cantidad * precio_unitario para la venta indicada
     SELECT SUM(pv.cantidad * .pv.precio_unitario) INTO total
     FROM producto_venta AS pv
