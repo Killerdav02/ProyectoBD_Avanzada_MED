@@ -39,11 +39,6 @@ CREATE TABLE IF NOT EXISTS `e_commerce_db`.`cliente` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
-  ALTER TABLE cliente
-  ADD COLUMN id_referido INT NULL,
-  ADD CONSTRAINT fk_referido
-  FOREIGN KEY (id_referido) REFERENCES cliente(id_cliente);
-
 
 -- -----------------------------------------------------
 -- Table `e_commerce_db`.`producto`
@@ -63,7 +58,8 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8mb4
 COLLATE = utf8mb4_0900_ai_ci;
 
-
+ALTER TABLE producto
+ADD COLUMN precio_costo DECIMAL(10,2);
 -- -----------------------------------------------------
 -- Table `e_commerce_db`.`carrito`
 -- -----------------------------------------------------

@@ -1,4 +1,4 @@
--- Active: 1761506796508@@127.0.0.1@3309@e_commerce_db
+-- Active: 1761844336720@@127.0.0.1@3309@e_commerce_db
 -- 1. trg_audit_precio_producto_after_update: Guarda un log de cambios de precios.
 DROP TRIGGER IF EXISTS trg_audit_precio_producto_after_update;
 DELIMITER //
