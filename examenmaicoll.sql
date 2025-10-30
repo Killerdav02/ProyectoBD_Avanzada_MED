@@ -39,7 +39,7 @@ DELIMITER ;
 
 DELIMITER //
 
-CREATE FUNCTION fn_CalcularRentabilidadProducto(producto INT)
+CREATE FUNCTION fn_CalcularRentabilidadProducto1(producto INT)
 RETURNS DECIMAL(12,2)
 DETERMINISTIC
 BEGIN
@@ -52,8 +52,6 @@ BEGIN
     WHERE id_producto_fk = producto;
 
     RETURN total;
-
-    RETURN valor_venta;
 END //
 
 DELIMITER ;
